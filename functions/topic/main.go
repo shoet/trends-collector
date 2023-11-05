@@ -6,16 +6,28 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/shoet/trends-collector/entities"
 	"github.com/shoet/trends-collector/util"
 )
 
 func Handler(ctx context.Context, request entities.Request) (entities.Response, error) {
+	c, err := config.LoadDefaultConfig(ctx, config.WithRegion("ap-northeast-1"))
+	if err != nil {
+		fmt.Printf("load aws config: %s\n", err.Error())
+		return entities.Response{StatusCode: 500}, err
+	}
+	client := dynamodb.NewFromConfig(c)
+	repo := NewTopicRepository(client)
+	h := &TopicHandler{
+		repo,
+	}
 	switch request.HTTPMethod {
 	case "GET":
-		if request.PathParameters["id"] != "" {
-			return getTopic(request)
-		}
 		return listTopics(request)
 	case "POST":
 		return createTopic(request)
@@ -34,21 +46,6 @@ func Handler(ctx context.Context, request entities.Request) (entities.Response, 
 func main() {
 	lambda.Start(Handler)
 }
-
-func getTopic(request entities.Request) (entities.Response, error) {
-	resp := []entities.Topic{
-		{
-			Id:   1,
-			Name: "test",
-		},
-	}
-	b, err := json.Marshal(resp)
-	if err != nil {
-		return entities.Response{StatusCode: 404}, err
-	}
-	return util.ResponseOK(b, nil), nil
-}
-
 func listTopics(request entities.Request) (entities.Response, error) {
 	resp := []entities.Topic{
 		{

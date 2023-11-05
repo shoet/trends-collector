@@ -24,3 +24,7 @@ func ResponseOK(body []byte, headers *HeaderOption) entities.Response {
 		Headers:         defaultHeader,
 	}
 }
+
+func ResponseError(statusCode int, err error) (entities.Response, error) {
+	return entities.Response{StatusCode: 404}, err
+}
