@@ -6,12 +6,10 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/shoet/trends-collector/entities"
+	"github.com/shoet/trends-collector/store"
 	"github.com/shoet/trends-collector/util"
 )
 
@@ -22,12 +20,16 @@ func Handler(ctx context.Context, request entities.Request) (entities.Response, 
 		return entities.Response{StatusCode: 500}, err
 	}
 	client := dynamodb.NewFromConfig(c)
-	repo := NewTopicRepository(client)
+	clocker := &util.RealClocker{}
+	repo := store.NewTopicRepository(client, clocker)
 	h := &TopicHandler{
 		repo,
 	}
 	switch request.HTTPMethod {
 	case "GET":
+		if request.PathParameters["id"] != "" {
+			return h.GetTopic(request)
+		}
 		return listTopics(request)
 	case "POST":
 		return createTopic(request)
@@ -46,10 +48,32 @@ func Handler(ctx context.Context, request entities.Request) (entities.Response, 
 func main() {
 	lambda.Start(Handler)
 }
+
+type TopicHandler struct {
+	repo *store.TopicRepository
+}
+
+func (t *TopicHandler) GetTopic(request entities.Request) (entities.Response, error) {
+	id := request.PathParameters["id"]
+
+	topic, err := t.repo.GetTopicByName(context.TODO(), id)
+	if err != nil {
+		fmt.Printf("get topic by id: %s\n", err.Error())
+		return entities.Response{StatusCode: 500}, err
+	}
+	resp := []*entities.Topic{
+		topic,
+	}
+	b, err := json.Marshal(resp)
+	if err != nil {
+		return entities.Response{StatusCode: 404}, err
+	}
+	return util.ResponseOK(b, nil), nil
+}
+
 func listTopics(request entities.Request) (entities.Response, error) {
 	resp := []entities.Topic{
 		{
-			Id:   1,
 			Name: "test",
 		},
 	}
@@ -62,7 +86,7 @@ func listTopics(request entities.Request) (entities.Response, error) {
 
 func createTopic(request entities.Request) (entities.Response, error) {
 	resp := entities.Topic{
-		Id: 1,
+		Name: "test",
 	}
 	b, err := json.Marshal(resp)
 	if err != nil {
@@ -73,7 +97,7 @@ func createTopic(request entities.Request) (entities.Response, error) {
 
 func deleteTopic(request entities.Request) (entities.Response, error) {
 	resp := entities.Topic{
-		Id: 1,
+		Name: "test",
 	}
 	b, err := json.Marshal(resp)
 	if err != nil {
@@ -85,7 +109,6 @@ func deleteTopic(request entities.Request) (entities.Response, error) {
 func updateTopic(request entities.Request) (entities.Response, error) {
 	resp := []entities.Topic{
 		{
-			Id:   1,
 			Name: "test",
 		},
 	}
