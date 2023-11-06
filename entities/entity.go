@@ -5,12 +5,10 @@ import "github.com/aws/aws-lambda-go/events"
 type Request events.APIGatewayProxyRequest
 type Response events.APIGatewayProxyResponse
 
-type TopicId int64
-
 type Topic struct {
 	Name      string `json:"name" dynamodbav:"name"`
-	CreatedAt string `json:"createdAt" dynamodbav:"created_at"`
-	UpdatedAt string `json:"updatedAt" dynamodbav:"updated_at"`
+	CreatedAt string `json:"createdAt,omitempty" dynamodbav:"created_at"`
+	UpdatedAt string `json:"updatedAt,omitempty" dynamodbav:"updated_at"`
 }
 
 type PageId int64

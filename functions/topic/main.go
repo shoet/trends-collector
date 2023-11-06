@@ -20,19 +20,20 @@ func Handler(ctx context.Context, request entities.Request) (entities.Response, 
 		return entities.Response{StatusCode: 500}, err
 	}
 	client := dynamodb.NewFromConfig(c)
-	clocker := &util.RealClocker{}
+	clocker, err := util.NewRealClocker()
+	if err != nil {
+		fmt.Printf("new clocker: %s\n", err.Error())
+		return entities.Response{StatusCode: 500}, err
+	}
 	repo := store.NewTopicRepository(client, clocker)
 	h := &TopicHandler{
 		repo,
 	}
 	switch request.HTTPMethod {
 	case "GET":
-		if request.PathParameters["id"] != "" {
-			return h.GetTopic(request)
-		}
-		return listTopics(request)
+		return h.ListTopics(request)
 	case "POST":
-		return createTopic(request)
+		return h.CreateTopic(request)
 	case "DELETE":
 		return deleteTopic(request)
 	case "PUT":
@@ -71,23 +72,27 @@ func (t *TopicHandler) GetTopic(request entities.Request) (entities.Response, er
 	return util.ResponseOK(b, nil), nil
 }
 
-func listTopics(request entities.Request) (entities.Response, error) {
-	resp := []entities.Topic{
-		{
-			Name: "test",
-		},
-	}
-	b, err := json.Marshal(resp)
+func (t *TopicHandler) ListTopics(request entities.Request) (entities.Response, error) {
+	topics, err := t.repo.ListTopics(context.TODO(), nil)
+	b, err := json.Marshal(topics)
 	if err != nil {
 		return entities.Response{StatusCode: 404}, err
 	}
 	return util.ResponseOK(b, nil), nil
 }
 
-func createTopic(request entities.Request) (entities.Response, error) {
-	resp := entities.Topic{
-		Name: "test",
+func (t *TopicHandler) CreateTopic(request entities.Request) (entities.Response, error) {
+	body := struct {
+		Name string `json:"name"`
+	}{}
+
+	if err := util.JSONStrToStruct(request.Body, &body); err != nil {
+		fmt.Printf("failed deserialize body: %s\n", err.Error())
+		return entities.Response{StatusCode: 500}, err
 	}
+
+	name, err := t.repo.AddTopic(context.TODO(), body.Name)
+	resp := entities.Topic{Name: name}
 	b, err := json.Marshal(resp)
 	if err != nil {
 		return entities.Response{StatusCode: 404}, err

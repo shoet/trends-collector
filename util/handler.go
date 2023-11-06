@@ -1,6 +1,9 @@
 package util
 
 import (
+	"encoding/json"
+	"strings"
+
 	"github.com/shoet/trends-collector/entities"
 )
 
@@ -27,4 +30,8 @@ func ResponseOK(body []byte, headers *HeaderOption) entities.Response {
 
 func ResponseError(statusCode int, err error) (entities.Response, error) {
 	return entities.Response{StatusCode: 404}, err
+}
+
+func JSONStrToStruct(s string, v any) error {
+	return json.NewDecoder(strings.NewReader(s)).Decode(v)
 }

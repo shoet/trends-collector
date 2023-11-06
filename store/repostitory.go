@@ -43,40 +43,86 @@ func (t *TopicRepository) GetTopicByName(ctx context.Context, name string) (*ent
 		getInput,
 	)
 	if err != nil {
-		fmt.Printf("get item: %s\n", err.Error())
+		err := fmt.Errorf("failed GetItem topics: %w", err)
+		fmt.Println(err.Error())
 		return nil, err
 	}
 	var topic *entities.Topic
 	err = attributevalue.UnmarshalMap(item.Item, &topic)
 	if err != nil {
-		fmt.Printf("unmarshal map: %s\n", err.Error())
+		err := fmt.Errorf("failed UnmarshalMap topics: %w", err)
+		fmt.Println(err.Error())
 		return nil, err
 	}
 	return topic, nil
 }
 
+type ListTopicsInput struct {
+	Limit int
+}
+
+func (t *TopicRepository) ListTopics(
+	ctx context.Context, option *ListTopicsInput,
+) ([]*entities.Topic, error) {
+	defaultOpt := &ListTopicsInput{
+		Limit: 100,
+	}
+	util.MergeStruct(defaultOpt, option)
+	scanInput := &dynamodb.ScanInput{
+		TableName: aws.String(t.TableName()),
+		Limit:     aws.Int32(int32(defaultOpt.Limit)),
+	}
+	scanOutput, err := t.DB.Scan(ctx, scanInput)
+	if err != nil {
+		err := fmt.Errorf("failed Scan topics: %w", err)
+		fmt.Println(err.Error())
+		return nil, err
+	}
+	var topics []*entities.Topic
+	err = attributevalue.UnmarshalListOfMaps(scanOutput.Items, &topics)
+	if err != nil {
+		err := fmt.Errorf("failed UnmarshalListOfMaps topics: %w", err)
+		fmt.Println(err.Error())
+		return nil, err
+	}
+	return topics, nil
+}
+
 func (t *TopicRepository) AddTopic(
 	ctx context.Context, topicName string,
-) (entities.TopicId, error) {
+) (string, error) {
 	newTopic := &entities.Topic{
 		Name:      topicName,
-		CreatedAt: util.NowFormatISO8601(t.Clocker),
-		UpdatedAt: util.NowFormatISO8601(t.Clocker),
+		CreatedAt: util.NowFormatRFC3339(t.Clocker),
+		UpdatedAt: util.NowFormatRFC3339(t.Clocker),
 	}
 	av, err := attributevalue.MarshalMap(newTopic)
 	if err != nil {
-		fmt.Printf("marshal map: %s\n", err.Error())
-		return 0, err
+		err := fmt.Errorf("failed MarshalMap topic: %w", err)
+		fmt.Println(err.Error())
+		return "", err
 	}
 	putInput := &dynamodb.PutItemInput{
 		TableName: aws.String(t.TableName()),
 		Item:      av,
 	}
-	output, err := t.DB.PutItem(ctx, putInput)
+	_, err = t.DB.PutItem(ctx, putInput)
 	if err != nil {
-		fmt.Printf("put item: %s\n", err.Error())
-		return 0, err
+		err := fmt.Errorf("failed PutItem topic: %w", err)
+		fmt.Println(err.Error())
+		return "", err
 	}
-	fmt.Println(output)
-	return 1, nil
+	return topicName, nil
+}
+
+type PageRepository struct {
+	DB      *dynamodb.Client
+	Clocker interfaces.Clocker
+}
+
+func NewPageRepository(db *dynamodb.Client, clocker interfaces.Clocker) *PageRepository {
+	return &PageRepository{
+		DB:      db,
+		Clocker: clocker,
+	}
 }
