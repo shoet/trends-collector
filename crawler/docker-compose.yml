@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  crawler:
+    container_name: trends-collector-crawler
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      # target: dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
