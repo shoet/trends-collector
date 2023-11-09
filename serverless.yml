@@ -33,23 +33,23 @@ provider:
   #       value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   #       description: API Key
 
-# you can add statements to the Lambda function's IAM Role here
-#  iam:
-#    role:
-#      statements:
-#        - Effect: "Allow"
-#          Action:
-#            - "s3:ListBucket"
-#          Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
-#        - Effect: "Allow"
-#          Action:
-#            - "s3:PutObject"
-#          Resource:
-#            Fn::Join:
-#              - ""
-#              - - "arn:aws:s3:::"
-#                - "Ref" : "ServerlessDeploymentBucket"
-#                - "/*"
+  # you can add statements to the Lambda function's IAM Role here
+  #  iam:
+  #    role:
+  #      statements:
+  #        - Effect: "Allow"
+  #          Action:
+  #            - "s3:ListBucket"
+  #          Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
+  #        - Effect: "Allow"
+  #          Action:
+  #            - "s3:PutObject"
+  #          Resource:
+  #            Fn::Join:
+  #              - ""
+  #              - - "arn:aws:s3:::"
+  #                - "Ref" : "ServerlessDeploymentBucket"
+  #                - "/*"
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -109,9 +109,7 @@ functions:
           method: put
           cors: true
           # private: true
-#    The following are a few example events you can configure
-#    NOTE: Please make sure to change your handler code to work with those events
-#    Check the event documentation for details
+
 # events:
 #    events:
 #      - httpApi:
@@ -156,16 +154,44 @@ resources:
     topicsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-            TableName: Topics
-            AttributeDefinitions:
-              - AttributeName: name
-                AttributeType: S
-            KeySchema:
-              - AttributeName: name
-                KeyType: HASH
-            ProvisionedThroughput:
-              ReadCapacityUnits: 1
-              WriteCapacityUnits: 1
+        TableName: topics
+        AttributeDefinitions:
+          - AttributeName: name
+            AttributeType: S
+        KeySchema:
+          - AttributeName: name
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    pagesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: pages
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: N
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    sequenceTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: sequence
+        AttributeDefinitions:
+          - AttributeName: tablename
+            AttributeType: S
+        KeySchema:
+          - AttributeName: tablename
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
 #  Resources:
 #    NewResource:
 #      Type: AWS::S3::Bucket

@@ -26,7 +26,7 @@ func NewTopicRepository(db *dynamodb.Client, clocker interfaces.Clocker) *TopicR
 }
 
 func (t *TopicRepository) TableName() string {
-	return "Topics"
+	return "topics"
 }
 
 func (t *TopicRepository) GetTopicByName(ctx context.Context, name string) (*entities.Topic, error) {
@@ -125,4 +125,51 @@ func NewPageRepository(db *dynamodb.Client, clocker interfaces.Clocker) *PageRep
 		DB:      db,
 		Clocker: clocker,
 	}
+}
+
+func (p *PageRepository) TableName() string {
+	return "pages"
+}
+
+type PageRepositoryAddPageInput struct {
+	Category string
+	Title    string
+	Trend    string
+	Url      string
+}
+
+func (t *PageRepository) AddPage(
+	ctx context.Context,
+	input *PageRepositoryAddPageInput,
+) (entities.PageId, error) {
+	id, err := NextSequence(ctx, t.DB, t.TableName())
+	if err != nil {
+		return 0, fmt.Errorf("failed NextSequence: %w", err)
+	}
+	newTopic := &entities.Page{
+		Id:        entities.PageId(id),
+		Category:  input.Category,
+		Title:     input.Title,
+		Trend:     input.Trend,
+		Url:       input.Url,
+		CreatedAt: util.NowFormatRFC3339(t.Clocker),
+		UpdatedAt: util.NowFormatRFC3339(t.Clocker),
+	}
+	av, err := attributevalue.MarshalMap(newTopic)
+	if err != nil {
+		err := fmt.Errorf("failed MarshalMap page: %w", err)
+		fmt.Println(err.Error())
+		return 0, err
+	}
+	putInput := &dynamodb.PutItemInput{
+		TableName: aws.String(t.TableName()),
+		Item:      av,
+	}
+	_, err = t.DB.PutItem(ctx, putInput)
+	if err != nil {
+		err := fmt.Errorf("failed PutItem page: %w", err)
+		fmt.Println(err.Error())
+		return 0, err
+	}
+	return entities.PageId(id), nil
 }
