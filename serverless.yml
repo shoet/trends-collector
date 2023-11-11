@@ -172,9 +172,13 @@ resources:
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: N
+          - AttributeName: partition
+            AttributeType: S
         KeySchema:
           - AttributeName: id
             KeyType: HASH
+          - AttributeName: partition
+            KeyType: RANGE
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1

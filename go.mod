@@ -3,21 +3,17 @@ module github.com/shoet/trends-collector
 go 1.20
 
 require (
-	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/aws/aws-lambda-go v1.41.0
 	github.com/aws/aws-sdk-go-v2 v1.22.1
 	github.com/aws/aws-sdk-go-v2/config v1.22.0
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.12.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.25.0
-	github.com/chromedp/cdproto v0.0.0-20231101223124-24f5925b5980
-	github.com/chromedp/chromedp v0.9.3
 	github.com/go-rod/rod v0.114.5
 	github.com/google/go-cmp v0.6.0
 	github.com/microcosm-cc/bluemonday v1.0.26
 )
 
 require (
-	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.15.1 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.2 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.1 // indirect
@@ -32,19 +28,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.25.0 // indirect
 	github.com/aws/smithy-go v1.16.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
-	github.com/chromedp/sysutil v1.0.0 // indirect
-	github.com/gobwas/httphead v0.1.0 // indirect
-	github.com/gobwas/pool v0.2.1 // indirect
-	github.com/gobwas/ws v1.3.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/josharian/intern v1.0.0 // indirect
-	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/ysmood/fetchup v0.2.3 // indirect
 	github.com/ysmood/goob v0.4.0 // indirect
 	github.com/ysmood/got v0.34.1 // indirect
 	github.com/ysmood/gson v0.7.3 // indirect
 	github.com/ysmood/leakless v0.8.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
 )

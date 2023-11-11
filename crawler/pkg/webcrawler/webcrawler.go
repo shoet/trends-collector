@@ -55,11 +55,12 @@ func (w *WebCrawler) CrawlPages(ctx context.Context) error {
 
 		for _, p := range pages {
 			input := &store.PageRepositoryAddPageInput{
-				Category: s.Category,
-				Title:    p.Title,
-				Rank:     p.Rank,
-				Trend:    p.Trend,
-				Url:      p.Url,
+				Category:  s.Category,
+				Partition: p.Partition,
+				Title:     p.Title,
+				Rank:      p.Rank,
+				Trend:     p.Trend,
+				Url:       p.Url,
 			}
 			_, err := w.repo.AddPage(ctx, input)
 			if err != nil {

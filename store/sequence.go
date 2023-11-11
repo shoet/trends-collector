@@ -47,3 +47,21 @@ func NextSequence(ctx context.Context, db *dynamodb.Client, tableName string) (S
 	}
 	return seq.Seq, nil
 }
+
+func AddSequenceTable(ctx context.Context, db *dynamodb.Client, tableName string) error {
+	input := &dynamodb.PutItemInput{
+		TableName: aws.String(sequenceTableName),
+		Item: map[string]types.AttributeValue{
+			"tablename": &types.AttributeValueMemberS{
+				Value: tableName,
+			},
+			"seq": &types.AttributeValueMemberN{
+				Value: "0",
+			},
+		},
+	}
+	if _, err := db.PutItem(ctx, input); err != nil {
+		return fmt.Errorf("failed put sequence: %w", err)
+	}
+	return nil
+}

@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.22.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.25.0
+	github.com/caarlos0/env/v10 v10.0.0
 	github.com/go-rod/rod v0.114.5
 	github.com/shoet/trends-collector v0.0.0
 )

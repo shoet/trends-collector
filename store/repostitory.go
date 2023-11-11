@@ -133,11 +133,12 @@ func (p *PageRepository) TableName() string {
 }
 
 type PageRepositoryAddPageInput struct {
-	Category string
-	Title    string
-	Rank     int
-	Trend    string
-	Url      string
+	Partition string
+	Category  string
+	Title     string
+	Rank      int
+	Trend     string
+	Url       string
 }
 
 func (t *PageRepository) AddPage(
@@ -150,6 +151,7 @@ func (t *PageRepository) AddPage(
 	}
 	newTopic := &entities.Page{
 		Id:        entities.PageId(id),
+		Partition: input.Partition,
 		Category:  input.Category,
 		Title:     input.Title,
 		Trend:     input.Trend,
