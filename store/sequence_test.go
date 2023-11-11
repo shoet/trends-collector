@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/shoet/trends-collector/testutil"
+	"github.com/shoet/trends-collector/util/testutil"
 )
 
 func Test_NextSequence(t *testing.T) {

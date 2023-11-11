@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/shoet/trends-collector/store"
-	"github.com/shoet/trends-collector/util"
+	"github.com/shoet/trends-collector/utiltime"
 )
 
 func exitFatal(err error) {
@@ -27,7 +27,7 @@ func main() {
 	}
 
 	db := dynamodb.NewFromConfig(cfg)
-	clocker, err := util.NewRealClocker()
+	clocker, err := utiltime.NewRealClocker()
 	if err != nil {
 		fmt.Println("failed NewReadClocker")
 		exitFatal(err)
