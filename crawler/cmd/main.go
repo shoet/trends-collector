@@ -8,8 +8,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/shoet/trends-collector-crawler/pkg/scrapper"
+	"github.com/shoet/trends-collector-crawler/pkg/webcrawler"
 	"github.com/shoet/trends-collector/store"
-	"github.com/shoet/trends-collector/utiltime"
+	"github.com/shoet/trends-collector/util/timeutil"
 )
 
 func exitFatal(err error) {
@@ -27,7 +29,7 @@ func main() {
 	}
 
 	db := dynamodb.NewFromConfig(cfg)
-	clocker, err := utiltime.NewRealClocker()
+	clocker, err := timeutil.NewRealClocker()
 	if err != nil {
 		fmt.Println("failed NewReadClocker")
 		exitFatal(err)
@@ -41,7 +43,7 @@ func main() {
 	client := http.Client{}
 	browserPath := "/opt/homebrew/bin/chromium" // TODO: env
 
-	c := NewWebCrawler(&client, browserPath, scrappers, db, repo)
+	c := webcrawler.NewWebCrawler(&client, browserPath, scrappers, db, repo)
 	err = c.CrawlPages(ctx)
 	if err != nil {
 		fmt.Println("failed CrawlPages")
@@ -50,17 +52,17 @@ func main() {
 
 }
 
-func buildScrappers() (Scrappers, error) {
-	scrappers := Scrappers{
+func buildScrappers() (scrapper.Scrappers, error) {
+	scrappers := scrapper.Scrappers{
 		{
-			category: "DailyTrends",
-			url:      "https://trends.google.co.jp/trends/trendingsearches/daily?geo=JP&hl=ja",
-			scrapper: &GoogleTrendsDailyTrendsScrapper{},
+			Category: "DailyTrends",
+			Url:      "https://trends.google.co.jp/trends/trendingsearches/daily?geo=JP&hl=ja",
+			Scrapper: &scrapper.GoogleTrendsDailyTrendsScrapper{},
 		},
 		{
-			category: "RealTimeTrends",
-			url:      "https://trends.google.co.jp/trends/trendingsearches/realtime?geo=JP&hl=ja&category=all",
-			scrapper: &GoogleTrendsRealTimeTrendsScrapper{},
+			Category: "RealTimeTrends",
+			Url:      "https://trends.google.co.jp/trends/trendingsearches/realtime?geo=JP&hl=ja&category=all",
+			Scrapper: &scrapper.GoogleTrendsRealTimeTrendsScrapper{},
 		},
 	}
 	return scrappers, nil

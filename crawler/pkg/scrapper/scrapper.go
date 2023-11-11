@@ -1,9 +1,20 @@
-package main
+package scrapper
 
 import (
 	"github.com/go-rod/rod"
 	"github.com/shoet/trends-collector/entities"
 )
+
+type Scrapper interface {
+	ScrapePage(string, *rod.Page) ([]*entities.Page, error)
+}
+
+type Scrappers []struct {
+	Category string
+	Url      string
+	Scrapper Scrapper
+	Pages    []*entities.Page
+}
 
 type GoogleTrendsDailyTrendsScrapper struct{}
 
