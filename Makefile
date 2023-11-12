@@ -1,5 +1,6 @@
 .DEFAULT_GOAL := help
 
+DOCKER_IMAGE := trends-collector-crawler
 DOCKER_TAG := latest
 
 .PHONY: build
@@ -25,7 +26,7 @@ build-crawler-local:
 
 .PHONY: build-container-crawler
 build-container-crawler:
-	docker build -t trands-collector-crawler:${DOCKER_TAG} \
+	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
 		--platform linux/amd64 \
 		--target deploy \
 		-f crawler/Dockerfile \
@@ -33,11 +34,15 @@ build-container-crawler:
 
 .PHONY: build-container-crawler-local
 build-container-crawler-local:
-	docker build -t trands-collector-crawler:${DOCKER_TAG} \
+	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
 		--target deploy \
 		-f crawler/Dockerfile \
 		--no-cache \
 		.
+
+.PHONY: push-container-crawler
+push-container-crawler:
+	bash ./container_push.sh
 
 .PHONY: help
 help: ## Show options

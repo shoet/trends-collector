@@ -8,7 +8,7 @@ import (
 )
 
 func BuildBrowser(browserPath string) (*rod.Browser, error) {
-	u := launcher.New().Bin(browserPath).MustLaunch()
+	u := launcher.New().Bin(browserPath).NoSandbox(true).MustLaunch()
 	browser := rod.New().ControlURL(u).MustConnect()
 	fmt.Printf("Start browser: %s\n", u)
 	return browser, nil
