@@ -3,22 +3,28 @@ FROM golang:1.20.10-bullseye as builder
 
 WORKDIR /app
 
-COPY go.mod .
-COPY go.sum .
+COPY ./crawler/go.mod ./crawler/go.mod
+COPY ./crawler/go.sum ./crawler/go.sum
+COPY ./go.mod ./go.mod
 
-RUN go mod download
+RUN cd ./crawler && go mod download
 
 COPY . .
 
-RUN go build -trimpath -ldflags="-w -s" -o main ./crawler/main.go
+RUN cd ./crawler && \
+    go build -trimpath -ldflags="-w -s" -tags timetzdata -o ./bin/main ./cmd/crawltask/main.go
 
 # ===== deploy stage ====
-FROM golang:1.20.10-alpine
+FROM golang:1.20.10-alpine as deploy
 
-RUN apt update
+WORKDIR /app
+
+RUN apk update
 
 RUN apk add chromium
+RUN apk add libc6-compat
+RUN ln -s /lib/libc.so.6 /usr/lib/libresolv.so.2
 
-COPY --from=builder /app/main /app/main
+COPY --from=builder /app/crawler/bin/main ./main
 
 CMD ["/app/main"]

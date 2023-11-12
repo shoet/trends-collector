@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/shoet/trends-collector/interfaces"
+	_ "time/tzdata"
 )
 
 type RealClocker struct{}
