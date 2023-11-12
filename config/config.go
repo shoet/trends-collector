@@ -7,7 +7,9 @@ import (
 )
 
 type Config struct {
-	BrowserPath string `env:"CRAWLER_BROWSER_PATH" envDefault:"/opt/homebrew/bin/chromium"`
+	BrowserPath   string `env:"CRAWLER_BROWSER_PATH,required"`
+	SlackBOTToken string `env:"CRAWLER_SLACK_BOT_TOKEN,required"`
+	SlackChannel  string `env:"CRAWLER_NOTIFY_CHANNEL,required"`
 }
 
 func NewConfig() (*Config, error) {

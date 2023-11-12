@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.22.0
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.12.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.25.0
+	github.com/caarlos0/env/v10 v10.0.0
 	github.com/go-rod/rod v0.114.5
 	github.com/google/go-cmp v0.6.0
 	github.com/microcosm-cc/bluemonday v1.0.26
