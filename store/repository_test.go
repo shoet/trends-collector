@@ -6,21 +6,21 @@ import (
 	"testing"
 
 	"github.com/shoet/trends-collector/entities"
-	"github.com/shoet/trends-collector/testutil"
-	"github.com/shoet/trends-collector/util"
+	"github.com/shoet/trends-collector/util/testutil"
+	"github.com/shoet/trends-collector/util/timeutil"
 )
 
 func Test_TopicRepository_GetTopicByName(t *testing.T) {
 	ctx := context.Background()
-	clocker := &util.FixedClocker{}
+	clocker := &timeutil.FixedClocker{}
 	client, err := testutil.NewDynamoDBForTest(t, ctx, "ap-northeast-1")
 	if err != nil {
 		t.Fatalf("new dynamodb client: %s\n", err.Error())
 	}
 	want := &entities.Topic{
 		Name:      "test",
-		CreatedAt: util.NowFormatRFC3339(clocker),
-		UpdatedAt: util.NowFormatRFC3339(clocker),
+		CreatedAt: timeutil.NowFormatRFC3339(clocker),
+		UpdatedAt: timeutil.NowFormatRFC3339(clocker),
 	}
 
 	sut := NewTopicRepository(client, clocker)
@@ -33,7 +33,7 @@ func Test_TopicRepository_GetTopicByName(t *testing.T) {
 
 func Test_TopicRepository_AddTopic(t *testing.T) {
 	ctx := context.Background()
-	clocker, err := util.NewRealClocker()
+	clocker, err := timeutil.NewRealClocker()
 	if err != nil {
 		t.Fatalf("new clocker: %s\n", err.Error())
 	}
@@ -51,7 +51,7 @@ func Test_TopicRepository_AddTopic(t *testing.T) {
 
 func Test_TopicRepository_ListTopics(t *testing.T) {
 	ctx := context.Background()
-	clocker := &util.FixedClocker{}
+	clocker := &timeutil.FixedClocker{}
 	client, err := testutil.NewDynamoDBForTest(t, ctx, "ap-northeast-1")
 	if err != nil {
 		t.Fatalf("new dynamodb client: %s\n", err.Error())

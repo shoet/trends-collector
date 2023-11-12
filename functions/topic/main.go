@@ -10,7 +10,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/shoet/trends-collector/entities"
 	"github.com/shoet/trends-collector/store"
-	"github.com/shoet/trends-collector/util"
+	"github.com/shoet/trends-collector/util/responseutil"
+	"github.com/shoet/trends-collector/util/structutil"
+	"github.com/shoet/trends-collector/util/timeutil"
 )
 
 func Handler(ctx context.Context, request entities.Request) (entities.Response, error) {
@@ -20,7 +22,7 @@ func Handler(ctx context.Context, request entities.Request) (entities.Response, 
 		return entities.Response{StatusCode: 500}, err
 	}
 	client := dynamodb.NewFromConfig(c)
-	clocker, err := util.NewRealClocker()
+	clocker, err := timeutil.NewRealClocker()
 	if err != nil {
 		fmt.Printf("new clocker: %s\n", err.Error())
 		return entities.Response{StatusCode: 500}, err
@@ -69,7 +71,7 @@ func (t *TopicHandler) GetTopic(request entities.Request) (entities.Response, er
 	if err != nil {
 		return entities.Response{StatusCode: 404}, err
 	}
-	return util.ResponseOK(b, nil), nil
+	return responseutil.ResponseOK(b, nil), nil
 }
 
 func (t *TopicHandler) ListTopics(request entities.Request) (entities.Response, error) {
@@ -78,7 +80,7 @@ func (t *TopicHandler) ListTopics(request entities.Request) (entities.Response, 
 	if err != nil {
 		return entities.Response{StatusCode: 404}, err
 	}
-	return util.ResponseOK(b, nil), nil
+	return responseutil.ResponseOK(b, nil), nil
 }
 
 func (t *TopicHandler) CreateTopic(request entities.Request) (entities.Response, error) {
@@ -86,7 +88,7 @@ func (t *TopicHandler) CreateTopic(request entities.Request) (entities.Response,
 		Name string `json:"name"`
 	}{}
 
-	if err := util.JSONStrToStruct(request.Body, &body); err != nil {
+	if err := structutil.JSONStrToStruct(request.Body, &body); err != nil {
 		fmt.Printf("failed deserialize body: %s\n", err.Error())
 		return entities.Response{StatusCode: 500}, err
 	}
@@ -97,7 +99,7 @@ func (t *TopicHandler) CreateTopic(request entities.Request) (entities.Response,
 	if err != nil {
 		return entities.Response{StatusCode: 404}, err
 	}
-	return util.ResponseOK(b, nil), nil
+	return responseutil.ResponseOK(b, nil), nil // TODO: status 201
 }
 
 func deleteTopic(request entities.Request) (entities.Response, error) {
@@ -108,7 +110,7 @@ func deleteTopic(request entities.Request) (entities.Response, error) {
 	if err != nil {
 		return entities.Response{StatusCode: 404}, err
 	}
-	return util.ResponseOK(b, nil), nil
+	return responseutil.ResponseOK(b, nil), nil
 }
 
 func updateTopic(request entities.Request) (entities.Response, error) {
@@ -121,5 +123,5 @@ func updateTopic(request entities.Request) (entities.Response, error) {
 	if err != nil {
 		return entities.Response{StatusCode: 404}, err
 	}
-	return util.ResponseOK(b, nil), nil
+	return responseutil.ResponseOK(b, nil), nil
 }

@@ -1,9 +1,9 @@
-package util
+package structutil
 
 import (
 	"testing"
 
-	"github.com/shoet/trends-collector/testutil"
+	"github.com/shoet/trends-collector/util/testutil"
 )
 
 func Test_MergeStruct(t *testing.T) {

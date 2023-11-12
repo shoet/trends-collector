@@ -1,10 +1,11 @@
-package util
+package timeutil
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/shoet/trends-collector/interfaces"
+	_ "time/tzdata"
 )
 
 type RealClocker struct{}
@@ -30,4 +31,12 @@ func (fc *FixedClocker) Now() time.Time {
 
 func NowFormatRFC3339(c interfaces.Clocker) string {
 	return c.Now().Format(time.RFC3339)
+}
+
+func NowFormatYYYYMMDD(c interfaces.Clocker) string {
+	return c.Now().Format("20060102")
+}
+
+func NowFormatYYYYMMDDHHMMSS(c interfaces.Clocker) string {
+	return c.Now().Format("20060102150405")
 }

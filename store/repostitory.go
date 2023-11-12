@@ -10,7 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/shoet/trends-collector/entities"
 	"github.com/shoet/trends-collector/interfaces"
-	"github.com/shoet/trends-collector/util"
+	"github.com/shoet/trends-collector/util/structutil"
+	"github.com/shoet/trends-collector/util/timeutil"
 )
 
 type TopicRepository struct {
@@ -26,7 +27,7 @@ func NewTopicRepository(db *dynamodb.Client, clocker interfaces.Clocker) *TopicR
 }
 
 func (t *TopicRepository) TableName() string {
-	return "Topics"
+	return "topics"
 }
 
 func (t *TopicRepository) GetTopicByName(ctx context.Context, name string) (*entities.Topic, error) {
@@ -67,7 +68,7 @@ func (t *TopicRepository) ListTopics(
 	defaultOpt := &ListTopicsInput{
 		Limit: 100,
 	}
-	util.MergeStruct(defaultOpt, option)
+	structutil.MergeStruct(defaultOpt, option)
 	scanInput := &dynamodb.ScanInput{
 		TableName: aws.String(t.TableName()),
 		Limit:     aws.Int32(int32(defaultOpt.Limit)),
@@ -93,8 +94,8 @@ func (t *TopicRepository) AddTopic(
 ) (string, error) {
 	newTopic := &entities.Topic{
 		Name:      topicName,
-		CreatedAt: util.NowFormatRFC3339(t.Clocker),
-		UpdatedAt: util.NowFormatRFC3339(t.Clocker),
+		CreatedAt: timeutil.NowFormatRFC3339(t.Clocker),
+		UpdatedAt: timeutil.NowFormatRFC3339(t.Clocker),
 	}
 	av, err := attributevalue.MarshalMap(newTopic)
 	if err != nil {
@@ -125,4 +126,55 @@ func NewPageRepository(db *dynamodb.Client, clocker interfaces.Clocker) *PageRep
 		DB:      db,
 		Clocker: clocker,
 	}
+}
+
+func (p *PageRepository) TableName() string {
+	return "pages"
+}
+
+type PageRepositoryAddPageInput struct {
+	Partition string
+	Category  string
+	Title     string
+	Rank      int
+	Trend     string
+	Url       string
+}
+
+func (t *PageRepository) AddPage(
+	ctx context.Context,
+	input *PageRepositoryAddPageInput,
+) (entities.PageId, error) {
+	id, err := NextSequence(ctx, t.DB, t.TableName())
+	if err != nil {
+		return 0, fmt.Errorf("failed NextSequence: %w", err)
+	}
+	newTopic := &entities.Page{
+		Id:        entities.PageId(id),
+		Partition: input.Partition,
+		Category:  input.Category,
+		Title:     input.Title,
+		Trend:     input.Trend,
+		Url:       input.Url,
+		Rank:      input.Rank,
+		CreatedAt: timeutil.NowFormatRFC3339(t.Clocker),
+		UpdatedAt: timeutil.NowFormatRFC3339(t.Clocker),
+	}
+	av, err := attributevalue.MarshalMap(newTopic)
+	if err != nil {
+		err := fmt.Errorf("failed MarshalMap page: %w", err)
+		fmt.Println(err.Error())
+		return 0, err
+	}
+	putInput := &dynamodb.PutItemInput{
+		TableName: aws.String(t.TableName()),
+		Item:      av,
+	}
+	_, err = t.DB.PutItem(ctx, putInput)
+	if err != nil {
+		err := fmt.Errorf("failed PutItem page: %w", err)
+		fmt.Println(err.Error())
+		return 0, err
+	}
+	return entities.PageId(id), nil
 }
