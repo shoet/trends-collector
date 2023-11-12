@@ -129,10 +129,10 @@ func (h *HHKBStudioNotifyScrapper) ScrapePage(
 	searchText := "大好評につき現在在庫切れです。"
 	message := searchText
 	if !strings.Contains(html, searchText) {
-		message = "HHKBの在庫があります！"
+		message = "<!channel> HHKBの在庫があります！"
 	}
+	message = message + "\n" + "https://www.pfu.ricoh.com/direct/hhkb/hhkb-studio/detail_pd-id120b.html"
 	slackInput := &slack.SendMessageInput{}
-	// TODO: post image slack
 	if err := h.slackClient.SendMessage(message, slackInput); err != nil {
 		return nil, fmt.Errorf("failed to send message: %w", err)
 	}
