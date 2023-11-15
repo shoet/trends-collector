@@ -9,12 +9,8 @@ import (
 	"github.com/shoet/trends-collector/interfaces"
 )
 
-type Client interface {
-	Do(*http.Request) (*http.Response, error)
-}
-
 type SlackClient struct {
-	client  Client
+	client  interfaces.Client
 	token   string
 	channel string
 }

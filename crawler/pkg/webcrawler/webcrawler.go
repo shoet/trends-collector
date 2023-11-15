@@ -53,15 +53,22 @@ func (w *WebCrawler) CrawlPages(ctx context.Context) error {
 			return fmt.Errorf("failed scrape page: %w", err)
 		}
 
+		if len(elements) == 0 {
+			return nil
+		}
+
+		if err := w.repo.DeletePageByPartitionKey(ctx, elements[0].PartitionKey); err != nil {
+			return fmt.Errorf("failed DeletePageByPartitionKey: %w", err)
+		}
+
 		for _, e := range elements {
-			// TODO: remove if exists partition
 			input := &store.PageRepositoryAddPageInput{
-				Category:  s.Category,
-				Partition: e.Partition,
-				Title:     e.Title,
-				Rank:      e.Rank,
-				Trend:     e.Trend,
-				Url:       e.Url,
+				PartitionKey: e.PartitionKey,
+				TrendRank:    e.TrendRank,
+				Category:     s.Category,
+				Title:        e.Title,
+				Trend:        e.Trend,
+				Url:          e.Url,
 			}
 			_, err := w.repo.AddPage(ctx, input)
 			if err != nil {

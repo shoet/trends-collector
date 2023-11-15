@@ -183,7 +183,8 @@ func main() {
 										"dynamodb:Scan",
 										"dynamodb:DeleteItem",
 										"dynamodb:UpdateItem",
-										"dynamodb:PutItem"
+										"dynamodb:PutItem",
+										"dynamodb:BatchWriteItem"
 									],
 								  "Resource": "*"
 								}

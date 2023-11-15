@@ -1,48 +1,50 @@
 package scrapper
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/shoet/trends-collector-crawler/pkg/fetcher"
+	"github.com/shoet/trends-collector/util/timeutil"
 )
 
 func Test_GoogleTrendsDailyTrendsScrapper_ScrapePage(t *testing.T) {
-	t.Skip("refactoring")
+	url := "https://trends.google.co.jp/trends/trendingsearches/daily?geo=JP&hl=ja"
 
-	// client := &http.Client{}
-	//
-	// url := "https://trends.google.co.jp/trends/trendingsearches/daily?geo=JP&hl=ja"
-	// c := webcrawler.NewWebCrawler()
-	//
-	// doc, err := c.GetPageHTML(url)
-	// if err != nil {
-	// 	t.Fatalf("failed create document: %v", err)
-	// }
-	//
-	// h, err := doc.Html()
-	// os.Stdout.WriteString(h)
-	//
-	// pages, err := sut.ScrapePage(doc)
-	// if err != nil {
-	// 	t.Fatalf("failed scrape page: %v", err)
-	// }
-	// fmt.Println(pages)
+	c := &timeutil.RealClocker{}
+	browser, err := fetcher.BuildBrowser("/opt/homebrew/bin/chromium")
+	if err != nil {
+		t.Fatalf("failed build browser: %v", err)
+	}
+
+	doc := fetcher.FetchPage(browser, url)
+
+	sut := NewGoogleTrendsDailyTrendsScrapper(c)
+	pages, err := sut.ScrapePage("DailyTrend", doc)
+	if err != nil {
+		t.Fatalf("failed scrape page: %v", err)
+	}
+
+	fmt.Println(pages[0].TrendRank)
 
 }
 
-func Test_NewHHKBStudioNotifyScrapper(t *testing.T) {
-	t.Skip("refactoring")
-	// browserPath := "/opt/homebrew/bin/chromium"
-	// browser, err := fetcher.BuildBrowser(browserPath)
-	// if err != nil {
-	// 	t.Fatalf("failed build browser: %v", err)
-	// }
-	// page := fetcher.FetchPage(
-	// 	browser, "https://www.pfu.ricoh.com/direct/hhkb/hhkb-studio/detail_pd-id120b.html")
-	//
-	// s := NewHHKBStudioNotifyScrapper()
-	// p, err := s.ScrapePage("HHKB", page)
-	// if err != nil {
-	// 	t.Fatalf("failed scrape page: %v", err)
-	// }
-	//
-	// _ = p
+func Test_GoogleTrendsRealTimeTrendsScrapper_ScrapePage(t *testing.T) {
+	url := "https://trends.google.co.jp/trends/trendingsearches/realtime?geo=JP&hl=ja&category=all"
+
+	c := &timeutil.RealClocker{}
+	browser, err := fetcher.BuildBrowser("/opt/homebrew/bin/chromium")
+	if err != nil {
+		t.Fatalf("failed build browser: %v", err)
+	}
+
+	doc := fetcher.FetchPage(browser, url)
+
+	sut := NewGoogleTrendsRealTimeTrendsScrapper(c)
+	pages, err := sut.ScrapePage("RealTimeTrend", doc)
+	if err != nil {
+		t.Fatalf("failed scrape page: %v", err)
+	}
+
+	fmt.Println(pages[0].TrendRank)
 }

@@ -133,12 +133,12 @@ func (p *PageRepository) TableName() string {
 }
 
 type PageRepositoryAddPageInput struct {
-	Partition string
-	Category  string
-	Title     string
-	Rank      int
-	Trend     string
-	Url       string
+	PartitionKey string
+	TrendRank    int64
+	Trend        string
+	Category     string
+	Title        string
+	Url          string
 }
 
 func (t *PageRepository) AddPage(
@@ -150,21 +150,18 @@ func (t *PageRepository) AddPage(
 		return 0, fmt.Errorf("failed NextSequence: %w", err)
 	}
 	newTopic := &entities.Page{
-		Id:        entities.PageId(id),
-		Partition: input.Partition,
-		Category:  input.Category,
-		Title:     input.Title,
-		Trend:     input.Trend,
-		Url:       input.Url,
-		Rank:      input.Rank,
-		CreatedAt: timeutil.NowFormatRFC3339(t.Clocker),
-		UpdatedAt: timeutil.NowFormatRFC3339(t.Clocker),
+		PartitionKey: input.PartitionKey,
+		TrendRank:    input.TrendRank,
+		Category:     input.Category,
+		Title:        input.Title,
+		Trend:        input.Trend,
+		Url:          input.Url,
+		CreatedAt:    timeutil.NowFormatRFC3339(t.Clocker),
+		UpdatedAt:    timeutil.NowFormatRFC3339(t.Clocker),
 	}
 	av, err := attributevalue.MarshalMap(newTopic)
 	if err != nil {
-		err := fmt.Errorf("failed MarshalMap page: %w", err)
-		fmt.Println(err.Error())
-		return 0, err
+		return 0, fmt.Errorf("failed MarshalMap page: %w", err)
 	}
 	putInput := &dynamodb.PutItemInput{
 		TableName: aws.String(t.TableName()),
@@ -177,4 +174,57 @@ func (t *PageRepository) AddPage(
 		return 0, err
 	}
 	return entities.PageId(id), nil
+}
+
+func (t *PageRepository) queryPageByPartitionKey(
+	ctx context.Context,
+	partitionKey string,
+) (*dynamodb.QueryOutput, error) {
+	output, err := t.DB.Query(ctx, &dynamodb.QueryInput{
+		TableName: aws.String(t.TableName()),
+		KeyConditions: map[string]types.Condition{
+			"partition_key": {
+				ComparisonOperator: types.ComparisonOperatorEq,
+				AttributeValueList: []types.AttributeValue{
+					&types.AttributeValueMemberS{
+						Value: partitionKey,
+					},
+				},
+			},
+		},
+		ProjectionExpression: aws.String("partition_key,trend_rank"),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed Query: %w", err)
+	}
+	return output, nil
+}
+
+func (t *PageRepository) DeletePageByPartitionKey(
+	ctx context.Context,
+	partitionKey string,
+) error {
+	queryRes, err := t.queryPageByPartitionKey(ctx, partitionKey)
+	if err != nil {
+		return fmt.Errorf("failed queryPageByPartitionKey page: %w", err)
+	}
+
+	if queryRes.Count == 0 {
+		return nil
+	}
+
+	var wr []types.WriteRequest
+	for _, item := range queryRes.Items {
+		wr = append(wr, types.WriteRequest{
+			DeleteRequest: &types.DeleteRequest{Key: item}})
+	}
+	_, err = t.DB.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
+		RequestItems: map[string][]types.WriteRequest{
+			t.TableName(): wr,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed BatchWriteItem page: %w", err)
+	}
+	return nil
 }

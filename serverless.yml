@@ -104,14 +104,14 @@ resources:
       Properties:
         TableName: pages
         AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: N
-          - AttributeName: partition
+          - AttributeName: partition_key
             AttributeType: S
+          - AttributeName: trend_rank
+            AttributeType: N
         KeySchema:
-          - AttributeName: id
+          - AttributeName: partition_key
             KeyType: HASH
-          - AttributeName: partition
+          - AttributeName: trend_rank
             KeyType: RANGE
         ProvisionedThroughput:
           ReadCapacityUnits: 1

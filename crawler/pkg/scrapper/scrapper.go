@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/go-rod/rod"
@@ -47,15 +48,22 @@ func (g *GoogleTrendsDailyTrendsScrapper) ScrapePage(
 	pages := make([]*entities.Page, 0, len(trends))
 	ymd := timeutil.NowFormatYYYYMMDD(g.clocker)
 	for _, element := range trends {
+		rankStr := element.MustElement(".index").MustText()
+		rank, err := strconv.Atoi(rankStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert rank: %w", err)
+		}
 		title := element.MustElement(".title").MustText()
 		count := element.MustElement(".search-count-title").MustText()
 		url := element.MustElement(".summary-text>a").MustAttribute("href")
+
 		pages = append(pages, &entities.Page{
-			Partition: ymd,
-			Category:  category,
-			Url:       *url,
-			Title:     title,
-			Trend:     count,
+			PartitionKey: ymd,
+			TrendRank:    int64(rank),
+			Category:     category,
+			Url:          *url,
+			Title:        title,
+			Trend:        count,
 		})
 	}
 	return pages, nil
@@ -80,13 +88,19 @@ func (g *GoogleTrendsRealTimeTrendsScrapper) ScrapePage(
 	pages := make([]*entities.Page, 0, len(trends))
 	ymdhms := timeutil.NowFormatYYYYMMDDHHMMSS(g.clocker)
 	for _, element := range trends {
+		rankStr := element.MustElement(".index").MustText()
+		rank, err := strconv.Atoi(rankStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert rank: %w", err)
+		}
 		title := element.MustElement(".title").MustText()
 		url := element.MustElement(".summary-text>a").MustAttribute("href")
 		pages = append(pages, &entities.Page{
-			Partition: ymdhms,
-			Category:  category,
-			Url:       *url,
-			Title:     title,
+			PartitionKey: ymdhms,
+			TrendRank:    int64(rank),
+			Category:     category,
+			Url:          *url,
+			Title:        title,
 		})
 	}
 	return pages, nil
