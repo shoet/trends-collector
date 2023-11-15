@@ -24,6 +24,9 @@ func DumpRodElement(w io.Writer, elem interface{}) error {
 func dumpRodElements(w io.Writer, elem []*rod.Element) error {
 	for _, e := range elem {
 		html, err := e.HTML()
+		if err != nil {
+			return fmt.Errorf("failed to get html: %w", err)
+		}
 
 		p := bluemonday.UGCPolicy()
 		p.AllowAttrs("class", "id").OnElements("div")

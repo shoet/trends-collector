@@ -1,7 +1,6 @@
 .DEFAULT_GOAL := help
 
 DOCKER_IMAGE := trends-collector-crawler
-DOCKER_TAG := latest
 
 .PHONY: build
 build: ## Build Lambda functions binary
@@ -26,17 +25,17 @@ build-crawler-local: ## Build crawler binary on Arm64
 	cd crawler && \
 		go build -trimpath -ldflags="-s -w" -o crawler/cmd/bin/main cmd/crawltask/main.go
 
-.PHONY: build-container-crawler
-build-container-crawler: ## Build crawler container image
-	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+.PHONY: build-image-crawler
+build-image-crawler: ## Build crawler container image
+	docker build -t ${DOCKER_IMAGE}:latest \
 		--platform linux/amd64 \
 		--target deploy \
 		-f crawler/Dockerfile \
 		.
 
-.PHONY: build-container-crawler-local
-build-container-crawler-local: ## Build crawler container image on Arm64
-	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+.PHONY: build-image-crawler-local
+build-image-crawler-local: ## Build crawler container image on Arm64
+	docker build -t ${DOCKER_IMAGE}:local \
 		--target deploy \
 		-f crawler/Dockerfile \
 		--no-cache \
