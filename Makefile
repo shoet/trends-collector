@@ -45,6 +45,11 @@ build-image-crawler-local: ## Build crawler container image on Arm64
 push-container-crawler: ## Push crawler container image
 	bash ./container_push.sh
 
+.PHONY: run-crawler
+run-crawler: ## run crawler development
+	cd crawler && \
+		go run cmd/crawltask/main.go
+
 .PHONY: help
 help: ## Show options
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \

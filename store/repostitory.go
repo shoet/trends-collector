@@ -213,10 +213,10 @@ func (t *PageRepository) DeletePageByPartitionKey(
 		return nil
 	}
 
-	var wr []types.WriteRequest
-	for _, item := range queryRes.Items {
-		wr = append(wr, types.WriteRequest{
-			DeleteRequest: &types.DeleteRequest{Key: item}})
+	wr := make([]types.WriteRequest, len(queryRes.Items), len(queryRes.Items))
+	for i, item := range queryRes.Items {
+		wr[i] = types.WriteRequest{
+			DeleteRequest: &types.DeleteRequest{Key: item}}
 	}
 	_, err = t.DB.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
 		RequestItems: map[string][]types.WriteRequest{
