@@ -1,9 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"log"
+	"os"
+	"text/template"
 
+	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ec2"
+	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ecs"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/iam"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
@@ -101,6 +108,23 @@ func CreateSecurityGroupForECSTask(
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
+		config, err := NewConfig()
+		if err != nil {
+			log.Fatalf("error loading config: %v", err)
+		}
+		// AccountID ///////////////////////////////////////////////////////////////////
+		caller, err := aws.GetCallerIdentity(ctx, nil, nil)
+		if err != nil {
+			return err
+		}
+		accountId := caller.AccountId
+
+		// Region ///////////////////////////////////////////////////////////////////////
+		region, err := aws.GetRegion(ctx, nil, nil)
+		if err != nil {
+			return err
+		}
+
 		// VPC //////////////////////////////////////////////////////////////////////////
 		resourceName := fmt.Sprintf("%s-vpc", projectTag)
 		vpc, err := CreateVPC(ctx, "10.2.0.0/16", resourceName)
@@ -199,6 +223,71 @@ func main() {
 		}
 		ctx.Export(resourceName, ecsTaskRole.ID())
 
+		// ECSタスク実行用ロール
+		secretsManagerArn := fmt.Sprintf("arn:aws:secretsmanager:%s:%s:secret:%s*", region.Name, accountId, config.SecretsManagerSecretId)
+		kmsArn := fmt.Sprintf("arn:aws:kms:%s:%s:key/%s", region.Name, accountId, config.KmsKeyId)
+		resourceName = fmt.Sprintf("%s-iam-role-for-ecs-task-execute", projectTag)
+		ecsTaskExecutionRole, err := iam.NewRole(
+			ctx,
+			resourceName,
+			&iam.RoleArgs{
+				AssumeRolePolicy: pulumi.String(`{
+					"Version": "2012-10-17",
+					"Statement": [{
+						"Effect": "Allow",
+						"Principal": {
+							"Service": "ecs-tasks.amazonaws.com"
+						},
+						"Action": "sts:AssumeRole"
+					}]
+				}`),
+				ManagedPolicyArns: pulumi.StringArray{
+					pulumi.String("arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"),
+					pulumi.String("arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"),
+				},
+				InlinePolicies: iam.RoleInlinePolicyArray{
+					&iam.RoleInlinePolicyArgs{
+						Name: pulumi.String("ecs-task-policy-logs"),
+						Policy: pulumi.String(`{
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+								   "Effect": "Allow",
+								   "Action": [
+										"logs:CreateLogGroup"
+								   ],
+								  "Resource": "*"
+								}
+							]
+						}`),
+					},
+					&iam.RoleInlinePolicyArgs{
+						Name: pulumi.String("ecs-task-policy-secretsmanager"),
+						Policy: pulumi.String(`{
+							"Version": "2012-10-17",
+							"Statement": [
+								{
+									"Effect": "Allow",
+									"Action": [
+										"secretsmanager:GetSecretValue",
+										"kms:Decrypt"
+									],
+									"Resource": [
+										"` + secretsManagerArn + `",
+										"` + kmsArn + `"
+									]
+								}
+							]
+						}`),
+					},
+				},
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("failed create iam role for ecs task execution: %v", err)
+		}
+		ctx.Export(resourceName, ecsTaskExecutionRole.ID())
+
 		// セキュリティグループ securitygroup ///////////////////////////////////////////////
 		resourceName = fmt.Sprintf("%s-sg-app-container", projectTag)
 		securityGroupForECSTask, err := CreateSecurityGroupForECSTask(
@@ -208,6 +297,29 @@ func main() {
 		}
 		ctx.Export(resourceName, securityGroupForECSTask.ID())
 
+		// ECS ////////////////////////////////////////////////////////////////////////
+		// TaskDefinition
+		taskDefinition, err := loadEcsContainerDefinition(
+			"./container_definition.json", accountId, region.Name, config.SecretsManagerSecretId)
+		if err != nil {
+			return fmt.Errorf("failed load ecs task definition: %v", err)
+		}
+		resourceName = fmt.Sprintf("%s-ecs-task-definition", projectTag)
+		ecsTaskDefinition, err := ecs.NewTaskDefinition(
+			ctx,
+			resourceName,
+			&ecs.TaskDefinitionArgs{
+				Family:                  pulumi.String("trends-crawler"),
+				NetworkMode:             pulumi.String("awsvpc"),
+				Cpu:                     pulumi.String("1024"),
+				Memory:                  pulumi.String("3072"),
+				TaskRoleArn:             ecsTaskRole.Arn,
+				ExecutionRoleArn:        ecsTaskExecutionRole.Arn,
+				RequiresCompatibilities: pulumi.StringArray{pulumi.String("FARGATE")},
+				ContainerDefinitions:    pulumi.String(taskDefinition),
+			})
+		ctx.Export(resourceName, ecsTaskDefinition.ID())
+
 		return nil
 	})
 }
@@ -216,4 +328,43 @@ func createNameTag(tag string) pulumi.StringMap {
 	return pulumi.StringMap{
 		"Name": pulumi.String(tag),
 	}
+}
+
+func loadFileToString(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("failed open file: %v", err)
+	}
+	b, err := io.ReadAll(f)
+	if err != nil {
+		return "", fmt.Errorf("failed read file: %v", err)
+	}
+	return string(b), nil
+}
+
+func loadEcsContainerDefinition(
+	path string, awsAccountId string, region string, secretsManagerId string) (string, error) {
+	type Values struct {
+		AwsAccountId     string
+		Region           string
+		SecretsManagerId string
+	}
+	definition, err := loadFileToString(path)
+	if err != nil {
+		return "", fmt.Errorf("failed load ecs container definition: %v", err)
+	}
+	tmpl, err := template.New("ecsTaskDefinition").Parse(definition)
+	if err != nil {
+		return "", fmt.Errorf("failed parse ecs container definition: %v", err)
+	}
+	var buffer bytes.Buffer
+	err = tmpl.Execute(&buffer, Values{
+		AwsAccountId:     awsAccountId,
+		Region:           region,
+		SecretsManagerId: secretsManagerId,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed execute ecs container definition: %v", err)
+	}
+	return buffer.String(), nil
 }
