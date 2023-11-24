@@ -141,7 +141,7 @@ resources:
             Id: trends-collector-crawler-schedule
             RoleArn: !GetAtt EventsRole.Arn
             EcsParameters:
-              TaskDefinitionArn: !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/crawler
+              TaskDefinitionArn: !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/trends-crawler
               TaskCount: 1
               LaunchType: FARGATE
               NetworkConfiguration:
@@ -173,7 +173,7 @@ resources:
                 - Effect: "Allow"
                   Action: "iam:PassRole"
                   Resource:
-                    - !Sub "arn:aws:iam::${AWS::AccountId}:role/ecsTaskExecutionRole"
+                    - !Sub "arn:aws:iam::${AWS::AccountId}:role/trends-collector-iam-role-for-ecs-task-execute-6553882"
                     - !Sub "arn:aws:iam::${AWS::AccountId}:role/trends-collector-iam-role-for-ecs-task-5ec0e0b"
 #  Outputs:
 #     NewOutput:
