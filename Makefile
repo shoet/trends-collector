@@ -6,6 +6,7 @@ DOCKER_IMAGE := trends-collector-crawler
 build: ## Build Lambda functions binary
 	env GOOS=linux go build -trimpath -ldflags="-s -w" -o bin/health functions/health/main.go
 	env GOOS=linux go build -trimpath -ldflags="-s -w" -o bin/topic functions/topic/main.go
+	env GOOS=linux go build -trimpath -ldflags="-s -w" -o bin/push functions/push/main.go
 
 .PHONY: clean
 clean: ## Clean Lambda functions binary

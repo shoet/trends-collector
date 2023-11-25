@@ -7,11 +7,14 @@ COPY ./crawler/go.mod ./crawler/go.mod
 COPY ./crawler/go.sum ./crawler/go.sum
 COPY ./go.mod ./go.mod
 
-RUN cd ./crawler && go mod download
+RUN --mount=type=cache,target=/go-mod-cache \
+    cd ./crawler && go mod download
 
 COPY . .
 
-RUN cd ./crawler && \
+RUN --mount=type=cache,target=/gomod-cache \
+    --mount=type=cache,target=/go-cache \
+    cd ./crawler && \
     go build -trimpath -ldflags="-w -s" -tags timetzdata -o ./bin/main ./cmd/crawltask/main.go
 
 # ===== deploy stage ====
