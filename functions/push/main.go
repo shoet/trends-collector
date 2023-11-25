@@ -56,7 +56,9 @@ func Handler(ctx context.Context, event map[string]string) (Response, error) {
 			return Response{Message: "failed"}, fmt.Errorf("failed to push daily trends: %w", err)
 		}
 	case "RealTimeTrends":
-		fmt.Println("RealTimeTrends")
+		if err := RealTimeTrendsPush(ctx, repo, slackClient, clocker); err != nil {
+			return Response{Message: "failed"}, fmt.Errorf("failed to push realtime trends: %w", err)
+		}
 	}
 
 	return Response{Message: "success"}, nil
@@ -72,7 +74,6 @@ func DailyTrendsPush(
 	slackClient *slack.SlackClient,
 	clocker *timeutil.RealClocker,
 ) error {
-
 	dailyTrends, err := push.NewDailyTrendsPush(repo, slackClient, clocker)
 	if err != nil {
 		return fmt.Errorf("failed to create daily trends push: %w", err)
@@ -80,6 +81,23 @@ func DailyTrendsPush(
 
 	if err := dailyTrends.Push(ctx); err != nil {
 		return fmt.Errorf("failed to push daily trends: %w", err)
+	}
+	return nil
+}
+
+func RealTimeTrendsPush(
+	ctx context.Context,
+	repo *store.PageRepository,
+	slackClient *slack.SlackClient,
+	clocker *timeutil.RealClocker,
+) error {
+	realTimeTrends, err := push.NewRealTimeTrendsPush(repo, slackClient, clocker)
+	if err != nil {
+		return fmt.Errorf("failed to create realtime trends push: %w", err)
+	}
+
+	if err := realTimeTrends.Push(ctx); err != nil {
+		return fmt.Errorf("failed to push realtime trends: %w", err)
 	}
 	return nil
 }

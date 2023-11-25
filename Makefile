@@ -51,6 +51,10 @@ run-crawler: ## run crawler development
 	cd crawler && \
 		go run cmd/crawltask/main.go
 
+.PHONY: generate
+generate: ## Generate codes
+	go generate ./...
+
 .PHONY: help
 help: ## Show options
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \

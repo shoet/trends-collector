@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/shoet/trends-collector/entities"
 	"github.com/shoet/trends-collector/interfaces"
+	"github.com/shoet/trends-collector/util/structutil"
 	"github.com/shoet/trends-collector/util/timeutil"
 )
 
@@ -125,6 +126,47 @@ func (t *PageRepository) queryPageByPartitionKey(
 		return nil, fmt.Errorf("failed Query: %w", err)
 	}
 	return output, nil
+}
+
+func (t *PageRepository) ScanPageByPartitionKeyPrefix(
+	ctx context.Context,
+	prefix string,
+) ([]string, error) {
+	type page struct {
+		PartitionKey string `dynamodbav:"partition_key"`
+	}
+	scanRes, err := t.scanPartitionKeyByPrefix(ctx, prefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed scanPartitionKeyByPrefix page: %w", err)
+	}
+	pages := make([]string, len(scanRes.Items), len(scanRes.Items))
+	for i, item := range scanRes.Items {
+		var p page
+		err = attributevalue.UnmarshalMap(item, &p)
+		if err != nil {
+			return nil, fmt.Errorf("failed UnmarshalMap page: %w", err)
+		}
+		pages[i] = p.PartitionKey
+	}
+	uniq := structutil.UniqArray(pages)
+	return uniq, nil
+}
+
+func (t *PageRepository) scanPartitionKeyByPrefix(
+	ctx context.Context,
+	prefix string,
+) (*dynamodb.ScanOutput, error) {
+	return t.DB.Scan(ctx, &dynamodb.ScanInput{
+		TableName: aws.String(t.TableName()),
+		ExpressionAttributeNames: map[string]string{
+			"#partition_key": "partition_key",
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":prefix": &types.AttributeValueMemberS{Value: prefix},
+		},
+		FilterExpression:     aws.String("begins_with(#partition_key, :prefix)"),
+		ProjectionExpression: aws.String("partition_key"),
+	})
 }
 
 func (t *PageRepository) DeletePageByPartitionKey(
