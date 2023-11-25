@@ -63,3 +63,19 @@ func Test_TopicRepository_ListTopics(t *testing.T) {
 	}
 	fmt.Println(got)
 }
+
+func Test_PageRepository_scanPartitionKeyByPrefix(t *testing.T) {
+	ctx := context.Background()
+	clocker := &timeutil.RealClocker{}
+	client, err := testutil.NewDynamoDBForTest(t, ctx, "ap-northeast-1")
+	if err != nil {
+		t.Fatalf("new dynamodb client: %s\n", err.Error())
+	}
+	sut := NewPageRepository(client, clocker)
+	ymd := timeutil.NowFormatYYYYMMDD(clocker)
+	got, err := sut.ScanPageByPartitionKeyPrefix(ctx, ymd)
+	if err != nil {
+		t.Fatalf("failed ScanPageByPartitionKeyPrefix: %s\n", err.Error())
+	}
+	fmt.Println(got)
+}

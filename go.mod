@@ -31,10 +31,14 @@ require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/matryer/moq v0.3.3 // indirect
 	github.com/ysmood/fetchup v0.2.3 // indirect
 	github.com/ysmood/goob v0.4.0 // indirect
 	github.com/ysmood/got v0.34.1 // indirect
 	github.com/ysmood/gson v0.7.3 // indirect
 	github.com/ysmood/leakless v0.8.0 // indirect
+	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/tools v0.3.0 // indirect
 )

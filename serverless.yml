@@ -82,6 +82,21 @@ functions:
           cors: true
           # private: true
 
+  push:
+    handler: bin/push
+    events:
+      - eventBridge:
+          schedule: cron(0 9 * * ? *)
+          input:
+            category: DailyTrends
+      - eventBridge:
+          schedule: cron(0 * * * ? *)
+          input:
+            category: RealTimeTrends
+    environment:
+      SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
+      SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
+
 # you can add CloudFormation resource templates here
 resources:
   Resources:
@@ -141,7 +156,7 @@ resources:
             Id: trends-collector-crawler-schedule
             RoleArn: !GetAtt EventsRole.Arn
             EcsParameters:
-              TaskDefinitionArn: !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/crawler
+              TaskDefinitionArn: !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/trends-crawler
               TaskCount: 1
               LaunchType: FARGATE
               NetworkConfiguration:
@@ -173,7 +188,7 @@ resources:
                 - Effect: "Allow"
                   Action: "iam:PassRole"
                   Resource:
-                    - !Sub "arn:aws:iam::${AWS::AccountId}:role/ecsTaskExecutionRole"
+                    - !Sub "arn:aws:iam::${AWS::AccountId}:role/trends-collector-iam-role-for-ecs-task-execute-6553882"
                     - !Sub "arn:aws:iam::${AWS::AccountId}:role/trends-collector-iam-role-for-ecs-task-5ec0e0b"
 #  Outputs:
 #     NewOutput:

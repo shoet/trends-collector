@@ -17,7 +17,7 @@ func Test_SendMessage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed create slack client: %v", err)
 	}
-	if err := slackClient.SendMessage("test", nil); err != nil {
+	if err := slackClient.SendMessage("test"); err != nil {
 		t.Fatalf("failed send message: %v", err)
 	}
 }

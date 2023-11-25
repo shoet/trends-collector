@@ -1,0 +1,42 @@
+[
+  {
+    "name": "crawler",
+    "image": "{{.AwsAccountId}}.dkr.ecr.{{.Region}}.amazonaws.com/trends-collector-crawler:latest",
+    "cpu": 0,
+    "portMappings": [
+      {
+        "name": "crawler-80-tcp",
+        "containerPort": 80,
+        "hostPort": 80,
+        "protocol": "tcp",
+        "appProtocol": "http"
+      }
+    ],
+    "essential": true,
+    "secrets": [
+      {
+        "valueFrom": "arn:aws:secretsmanager:{{.Region}}:{{.AwsAccountId}}:secret:{{.SecretsManagerId}}:CRAWLER_NOTIFY_CHANNEL::",
+        "name": "CRAWLER_NOTIFY_CHANNEL"
+      },
+      {
+        "valueFrom": "arn:aws:secretsmanager:{{.Region}}:{{.AwsAccountId}}:secret:{{.SecretsManagerId}}:CRAWLER_SLACK_BOT_TOKEN::",
+        "name": "CRAWLER_SLACK_BOT_TOKEN"
+      },
+      {
+        "valueFrom": "arn:aws:secretsmanager:{{.Region}}:{{.AwsAccountId}}:secret:{{.SecretsManagerId}}:CRAWLER_BROWSER_PATH::",
+        "name": "CRAWLER_BROWSER_PATH"
+      }
+    ],
+    "mountPoints": [],
+    "volumesFrom": [],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-create-group": "true",
+        "awslogs-group": "/ecs/trends-collector-crawler",
+        "awslogs-region": "{{.Region}}",
+        "awslogs-stream-prefix": "ecs"
+      }
+    }
+  }
+]

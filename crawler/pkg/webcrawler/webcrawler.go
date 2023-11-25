@@ -68,7 +68,7 @@ func (w *WebCrawler) CrawlPages(ctx context.Context) error {
 				Category:     s.Category,
 				Title:        e.Title,
 				Trend:        e.Trend,
-				Url:          e.Url,
+				PageUrl:      e.PageUrl,
 			}
 			_, err := w.repo.AddPage(ctx, input)
 			if err != nil {

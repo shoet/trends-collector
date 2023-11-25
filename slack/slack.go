@@ -23,10 +23,6 @@ func NewSlackClient(client interfaces.Client, token string, channel string) (*Sl
 	}, nil
 }
 
-type SendMessageInput struct {
-	image []byte
-}
-
 type SendMessageResponse struct {
 	Ok      bool   `json:"ok"`
 	Channel string `json:"channel"`
@@ -46,7 +42,7 @@ type SendMessageResponse struct {
 	} `json:"message"`
 }
 
-func (s *SlackClient) SendMessage(message string, input *SendMessageInput) error {
+func (s *SlackClient) SendMessage(message string) error {
 	post := struct {
 		Text    string `json:"text"`
 		Channel string `json:"channel"`

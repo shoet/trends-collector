@@ -61,7 +61,7 @@ func (g *GoogleTrendsDailyTrendsScrapper) ScrapePage(
 			PartitionKey: ymd,
 			TrendRank:    int64(rank),
 			Category:     category,
-			Url:          *url,
+			PageUrl:      *url,
 			Title:        title,
 			Trend:        count,
 		}
@@ -99,7 +99,7 @@ func (g *GoogleTrendsRealTimeTrendsScrapper) ScrapePage(
 			PartitionKey: ymdhms,
 			TrendRank:    int64(rank),
 			Category:     category,
-			Url:          *url,
+			PageUrl:      *url,
 			Title:        title,
 		}
 	}
@@ -146,8 +146,7 @@ func (h *HHKBStudioNotifyScrapper) ScrapePage(
 		message = "<!channel> HHKBの在庫があります！"
 	}
 	message = message + "\n" + "https://www.pfu.ricoh.com/direct/hhkb/hhkb-studio/detail_pd-id120b.html"
-	slackInput := &slack.SendMessageInput{}
-	if err := h.slackClient.SendMessage(message, slackInput); err != nil {
+	if err := h.slackClient.SendMessage(message); err != nil {
 		return nil, fmt.Errorf("failed to send message: %w", err)
 	}
 	pages := make([]*entities.Page, 0, 1)

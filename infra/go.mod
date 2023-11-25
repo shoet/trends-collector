@@ -3,6 +3,8 @@ module trends-collector
 go 1.20
 
 require (
+	github.com/caarlos0/env/v9 v9.0.0
+	github.com/joho/godotenv v1.5.1
 	github.com/pulumi/pulumi-aws/sdk/v6 v6.2.1
 	github.com/pulumi/pulumi/sdk/v3 v3.86.0
 )

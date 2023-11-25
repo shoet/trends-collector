@@ -6,6 +6,7 @@ DOCKER_IMAGE := trends-collector-crawler
 build: ## Build Lambda functions binary
 	env GOOS=linux go build -trimpath -ldflags="-s -w" -o bin/health functions/health/main.go
 	env GOOS=linux go build -trimpath -ldflags="-s -w" -o bin/topic functions/topic/main.go
+	env GOOS=linux go build -trimpath -ldflags="-s -w" -o bin/push functions/push/main.go
 
 .PHONY: clean
 clean: ## Clean Lambda functions binary
@@ -49,6 +50,10 @@ push-container-crawler: ## Push crawler container image
 run-crawler: ## run crawler development
 	cd crawler && \
 		go run cmd/crawltask/main.go
+
+.PHONY: generate
+generate: ## Generate codes
+	go generate ./...
 
 .PHONY: help
 help: ## Show options
