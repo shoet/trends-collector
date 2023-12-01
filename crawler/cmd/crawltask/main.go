@@ -80,7 +80,6 @@ func buildScrappers(
 ) (scrapper.Scrappers, error) {
 	dailyTrendsScrapper := scrapper.NewGoogleTrendsDailyTrendsScrapper(clocker)
 	realTimeTrendsScrapper := scrapper.NewGoogleTrendsRealTimeTrendsScrapper(clocker)
-	hhkbScrapper := scrapper.NewHHKBStudioNotifyScrapper(slackClient)
 	scrappers := scrapper.Scrappers{
 		{
 			Category: "DailyTrends",
@@ -91,11 +90,6 @@ func buildScrappers(
 			Category: "RealTimeTrends",
 			Url:      "https://trends.google.co.jp/trends/trendingsearches/realtime?geo=JP&hl=ja&category=all",
 			Scrapper: realTimeTrendsScrapper,
-		},
-		{
-			Category: "HHKB",
-			Url:      "https://www.pfu.ricoh.com/direct/hhkb/hhkb-studio/detail_pd-id120b.html",
-			Scrapper: hhkbScrapper,
 		},
 	}
 	return scrappers, nil

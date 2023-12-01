@@ -90,7 +90,7 @@ functions:
           input:
             category: DailyTrends
       - eventBridge:
-          schedule: cron(0 * * * ? *)
+          schedule: cron(0 */3 * * ? *)
           input:
             category: RealTimeTrends
     environment:

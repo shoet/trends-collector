@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/go-rod/rod"
 	"github.com/shoet/trends-collector-crawler/pkg/fetcher"
 	"github.com/shoet/trends-collector-crawler/pkg/scrapper"
 	"github.com/shoet/trends-collector/interfaces"
@@ -15,7 +14,7 @@ import (
 type WebCrawler struct {
 	client    interfaces.Client
 	scrappers scrapper.Scrappers
-	browser   *rod.Browser
+	fetcher   *fetcher.PageFetcher
 	db        *dynamodb.Client
 	repo      *store.PageRepository
 }
@@ -27,15 +26,17 @@ func NewWebCrawler(
 	db *dynamodb.Client,
 	repo *store.PageRepository,
 ) (*WebCrawler, error) {
-	browser, err := fetcher.BuildBrowser(browserPath)
+	fetcher, err := fetcher.NewPageFetcher(&fetcher.PageFetcherInput{
+		BrowserPath: browserPath,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed build browser: %w", err)
+		return nil, fmt.Errorf("failed to build fetcher: %w", err)
 	}
 
 	return &WebCrawler{
 		client:    client,
 		scrappers: scrappers,
-		browser:   browser,
+		fetcher:   fetcher,
 		db:        db,
 		repo:      repo,
 	}, nil
@@ -46,7 +47,7 @@ func (w *WebCrawler) CrawlPages(ctx context.Context) error {
 	for i := 0; i < len(w.scrappers); i++ {
 		s := &w.scrappers[i]
 		fmt.Println("Crawl: %s", s.Url)
-		page := fetcher.FetchPage(w.browser, s.Url)
+		page := w.fetcher.FetchPage(s.Url)
 
 		elements, err := s.Scrapper.ScrapePage(s.Category, page)
 		if err != nil {
@@ -54,6 +55,7 @@ func (w *WebCrawler) CrawlPages(ctx context.Context) error {
 		}
 
 		if len(elements) == 0 {
+			fmt.Println("no elements")
 			return nil
 		}
 
