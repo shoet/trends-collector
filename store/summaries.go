@@ -30,6 +30,7 @@ func (s *SummaryRepository) TableName() string {
 
 type SummaryRepositoryAddSummaryInput struct {
 	Id      entities.SummaryId
+	PageUrl string
 	Title   string
 	Content string
 	Summary string
@@ -41,6 +42,7 @@ func (s *SummaryRepository) AddSummary(
 ) (entities.SummaryId, error) {
 	newTopic := &entities.Summary{
 		Id:        input.Id,
+		PageUrl:   input.PageUrl,
 		Title:     input.Title,
 		Content:   input.Content,
 		Summary:   input.Summary,

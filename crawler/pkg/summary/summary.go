@@ -47,6 +47,7 @@ func (s *SummaryGenerator) MakeSummary(url string) (*entities.Summary, error) {
 		return nil, fmt.Errorf("failed to get summary: %w", err)
 	}
 	output.Id = entities.SummaryId(uuid.New().String())
+	output.PageUrl = url
 	output.Summary = summary
 
 	return output, nil

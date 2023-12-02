@@ -47,6 +47,7 @@ type SummaryId string
 
 type Summary struct {
 	Id        SummaryId `json:"id" dynamodbav:"id"`
+	PageUrl   string    `json:"pageUrl" dynamodbav:"page_url"`
 	Title     string    `json:"title" dynamodbav:"title"`
 	Content   string    `json:"content" dynamodbav:"content"`
 	Summary   string    `json:"summary" dynamodbav:"summary"`

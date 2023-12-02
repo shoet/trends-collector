@@ -71,6 +71,7 @@ func main() {
 			}
 			_, err = summaryRepo.AddSummary(ctx, &store.SummaryRepositoryAddSummaryInput{
 				Id:      output.Id,
+				PageUrl: output.PageUrl,
 				Title:   output.Title,
 				Content: output.Content,
 				Summary: output.Summary,
