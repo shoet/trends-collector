@@ -42,3 +42,14 @@ func (p *Page) FormatTemplate(templateText string) (string, error) {
 	}
 	return buffer.String(), nil
 }
+
+type SummaryId string
+
+type Summary struct {
+	Id        SummaryId `json:"id" dynamodbav:"id"`
+	Title     string    `json:"title" dynamodbav:"title"`
+	Content   string    `json:"content" dynamodbav:"content"`
+	Summary   string    `json:"summary" dynamodbav:"summary"`
+	CreatedAt string    `json:"createdAt,omitempty" dynamodbav:"created_at"`
+	UpdatedAt string    `json:"updatedAt,omitempty" dynamodbav:"updated_at"`
+}

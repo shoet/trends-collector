@@ -10,6 +10,7 @@ type Config struct {
 	BrowserPath   string `env:"CRAWLER_BROWSER_PATH,required"`
 	SlackBOTToken string `env:"CRAWLER_SLACK_BOT_TOKEN,required"`
 	SlackChannel  string `env:"CRAWLER_NOTIFY_CHANNEL,required"`
+	OpenAIAPIKey  string `env:"CRAWLER_OPENAI_API_KEY,required"`
 }
 
 func NewConfig() (*Config, error) {

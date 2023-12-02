@@ -132,6 +132,20 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
 
+    summaryTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: summaries
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
     sequenceTable:
       Type: AWS::DynamoDB::Table
       Properties:
