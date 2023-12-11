@@ -15,14 +15,6 @@
     "essential": true,
     "secrets": [
       {
-        "valueFrom": "arn:aws:secretsmanager:{{.Region}}:{{.AwsAccountId}}:secret:{{.SecretsManagerId}}:CRAWLER_NOTIFY_CHANNEL::",
-        "name": "CRAWLER_NOTIFY_CHANNEL"
-      },
-      {
-        "valueFrom": "arn:aws:secretsmanager:{{.Region}}:{{.AwsAccountId}}:secret:{{.SecretsManagerId}}:CRAWLER_SLACK_BOT_TOKEN::",
-        "name": "CRAWLER_SLACK_BOT_TOKEN"
-      },
-      {
         "valueFrom": "arn:aws:secretsmanager:{{.Region}}:{{.AwsAccountId}}:secret:{{.SecretsManagerId}}:CRAWLER_BROWSER_PATH::",
         "name": "CRAWLER_BROWSER_PATH"
       }

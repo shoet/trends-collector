@@ -3,6 +3,7 @@ package entities
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"text/template"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -41,6 +42,16 @@ func (p *Page) FormatTemplate(templateText string) (string, error) {
 		return "", fmt.Errorf("failed to execute template: %v", err)
 	}
 	return buffer.String(), nil
+}
+
+type Pages []*Page
+
+func (p Pages) SortTrendsRank(asc bool) {
+	if asc {
+		sort.Slice(p, func(i, j int) bool { return p[i].TrendRank < p[j].TrendRank })
+	} else {
+		sort.Slice(p, func(i, j int) bool { return p[i].TrendRank > p[j].TrendRank })
+	}
 }
 
 type SummaryId string
