@@ -58,11 +58,12 @@ func (s *SlackClient) SendMessage(message string) error {
 		"POST",
 		"https://slack.com/api/chat.postMessage",
 		bytes.NewBuffer(b))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.token))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %v", err)
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.token))
+
 	respB, err := s.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send message: %v", err)

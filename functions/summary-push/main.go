@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/shoet/trends-collector/config"
 	"github.com/shoet/trends-collector/entities"
+	"github.com/shoet/trends-collector/logging"
 	"github.com/shoet/trends-collector/slack"
 	"github.com/shoet/trends-collector/store"
 	"github.com/shoet/trends-collector/util/timeutil"
@@ -27,14 +29,16 @@ type Response struct {
 }
 
 func Handler(ctx context.Context, request entities.Request) (Response, error) {
+	logger := logging.NewLogger(os.Stdout)
 	c, err := awsConfig.LoadDefaultConfig(ctx)
 	if err != nil {
-		fmt.Printf("load aws config: %s\n", err.Error())
+		logger.Error("load aws config", err)
 		return Response{Message: "succceed"}, err
 	}
 	client := dynamodb.NewFromConfig(c)
 	clocker, err := timeutil.NewRealClocker()
 	if err != nil {
+		logger.Error("create clocker", err)
 		return Response{Message: "failed"}, fmt.Errorf("failed to create clocker: %w", err)
 	}
 	repo := store.NewPageRepository(client, clocker)
@@ -44,6 +48,7 @@ func Handler(ctx context.Context, request entities.Request) (Response, error) {
 	var pages entities.Pages
 	pages, err = repo.QueryPageByPartitionKey(ctx, ymd)
 	if err != nil {
+		logger.Error("query page", err)
 		return Response{Message: "failed"}, fmt.Errorf("failed to query page: %w", err)
 	}
 
@@ -52,19 +57,12 @@ func Handler(ctx context.Context, request entities.Request) (Response, error) {
 
 	cfg, err := config.NewConfig()
 	if err != nil {
+		logger.Error("load config", err)
 		return Response{Message: "failed"}, fmt.Errorf("failed to load config: %w", err)
 	}
-	if cfg.SlackBOTToken == "" {
-		return Response{Message: "failed"}, fmt.Errorf("failed to load config: slack bot token is empty")
-	}
-	if cfg.SlackChannel == "" {
-		return Response{Message: "failed"}, fmt.Errorf("failed to load config: slack channel is empty")
-	}
-	if cfg.SummaryAPIUrl == "" {
-		return Response{Message: "failed"}, fmt.Errorf("failed to load config: summary api url is empty")
-	}
-	if cfg.SummaryAPIKey == "" {
-		return Response{Message: "failed"}, fmt.Errorf("failed to load config: summary api key is empty")
+	if err := checkConfig(cfg); err != nil {
+		logger.Error("check config", err)
+		return Response{Message: "failed"}, fmt.Errorf("failed to check config: %w", err)
 	}
 	summaryClient := NewSummaryApiClient(cfg.SummaryAPIUrl, cfg.SummaryAPIKey)
 
@@ -72,10 +70,13 @@ func Handler(ctx context.Context, request entities.Request) (Response, error) {
 	for rankAsc, p := range pages {
 		taskId, err := summaryClient.RequestSummaryTask(p.PageUrl)
 		if err != nil {
+			logger.Error("request summary", err)
 			return Response{Message: "failed"}, fmt.Errorf("failed to request summary: %w", err)
 		}
 		taskIds[rankAsc] = taskId
 	}
+
+	logger.Info(fmt.Sprintf("task count: %d", len(taskIds)))
 
 	// pooling status
 	var wg sync.WaitGroup
@@ -87,47 +88,84 @@ func Handler(ctx context.Context, request entities.Request) (Response, error) {
 	ch := make(chan poolingResult, len(taskIds))
 	for rankAsc, t := range taskIds {
 		wg.Add(1)
-		go func(taskId string) {
+		go func(taskId string, rank int) {
 			defer wg.Done()
+			traceIdLogger := logger.NewTraceIdLogger(taskId)
 			result, err := summaryClient.PoolingTaskStatus(taskId)
 			if err != nil {
+				traceIdLogger.Error("pooling task status", err)
 				return
 			}
-			ch <- poolingResult{Rank: rankAsc, TaskId: taskId, result: result}
-		}(t)
+			traceIdLogger.Info("pooling task status: " + result.TaskStatus)
+			ch <- poolingResult{Rank: rank, TaskId: result.Id, result: result}
+		}(t, rankAsc)
 	}
 	wg.Wait()
+
+	close(ch) // chを閉じないとrange chで待ち続けてしまうので、wg.Wait()で送る側の終了が担保されているタイミングで閉じる
+
+	logger.Info("pooling task status finished")
 
 	// 待ち合わせ
 	response := make([]*SummaryApiResponse, len(taskIds))
 	for res := range ch {
 		response[res.Rank] = res.result
-		if len(response) == len(taskIds) {
-			close(ch)
-		}
 	}
+
+	logger.Info("start post slack")
 
 	// post slack
 	httpClient := &http.Client{}
 	slackClient, err := slack.NewSlackClient(httpClient, cfg.SlackBOTToken, cfg.SlackChannel)
 	if err != nil {
+		logger.Error("create slack client", err)
 		return Response{Message: "failed"}, fmt.Errorf("failed to create slack client: %w", err)
 	}
+	if err := slackClient.SendMessage("本日のトレンドの要約をお届けします！"); err != nil {
+		logger.Error("post title", err)
+		return Response{Message: "failed"}, fmt.Errorf("failed to post title slack: %w", err)
+	}
 	for i, res := range response {
+		if res == nil {
+			continue
+		}
 		if res.TaskStatus != "complete" {
+			text := fmt.Sprintf("第%d位【%s】\n%s", i+1, res.PageUrl, "残念ながら要約に失敗しました・・・")
+			if err := slackClient.SendMessage(text); err != nil {
+				logger.Error("post slack summary", err)
+				return Response{Message: "failed"}, fmt.Errorf("failed to post summary slack: %w", err)
+			}
 			continue
 		}
 		// post slack
 		text := fmt.Sprintf("第%d位【%s】\n%s", i+1, res.PageUrl, res.Summary)
 		if err := slackClient.SendMessage(text); err != nil {
+			logger.Error("post slack", err)
 			return Response{Message: "failed"}, fmt.Errorf("failed to post slack: %w", err)
 		}
 	}
+	logger.Info("push complete")
 	return Response{Message: "succceed"}, nil
 }
 
 func main() {
 	lambda.Start(Handler)
+}
+
+func checkConfig(cfg *config.Config) error {
+	if cfg.SlackBOTToken == "" {
+		return fmt.Errorf("failed to load config: slack bot token is empty")
+	}
+	if cfg.SlackChannel == "" {
+		return fmt.Errorf("failed to load config: slack channel is empty")
+	}
+	if cfg.SummaryAPIUrl == "" {
+		return fmt.Errorf("failed to load config: summary api url is empty")
+	}
+	if cfg.SummaryAPIKey == "" {
+		return fmt.Errorf("failed to load config: summary api key is empty")
+	}
+	return nil
 }
 
 func (s *SummaryApiClient) PoolingTaskStatus(taskId string) (*SummaryApiResponse, error) {
@@ -139,7 +177,7 @@ func (s *SummaryApiClient) PoolingTaskStatus(taskId string) (*SummaryApiResponse
 		if resp.TaskStatus == "complete" || resp.TaskStatus == "failed" {
 			return resp, nil
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 }
 

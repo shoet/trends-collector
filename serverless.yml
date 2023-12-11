@@ -106,6 +106,7 @@ functions:
       SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
       WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/task/API_URL}
       WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
+    timeout: 240
 
 # you can add CloudFormation resource templates here
 resources:
