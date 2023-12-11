@@ -7,9 +7,12 @@ import (
 )
 
 type Config struct {
-	BrowserPath   string `env:"CRAWLER_BROWSER_PATH,required"`
-	SlackBOTToken string `env:"CRAWLER_SLACK_BOT_TOKEN,required"`
-	SlackChannel  string `env:"CRAWLER_NOTIFY_CHANNEL,required"`
+	BrowserPath   string `env:"CRAWLER_BROWSER_PATH"`
+	SlackBOTToken string `env:"SLACK_BOT_TOKEN"`
+	SlackChannel  string `env:"SLACK_CHANNEL"`
+	OpenAIAPIKey  string `env:"CRAWLER_OPENAI_API_KEY"`
+	SummaryAPIUrl string `env:"WEB_PAGE_SUMMARY_API_URL"`
+	SummaryAPIKey string `env:"WEB_PAGE_SUMMARY_API_KEY"`
 }
 
 func NewConfig() (*Config, error) {

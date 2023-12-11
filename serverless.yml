@@ -90,12 +90,23 @@ functions:
           input:
             category: DailyTrends
       - eventBridge:
-          schedule: cron(0 * * * ? *)
+          schedule: cron(0 */3 * * ? *)
           input:
             category: RealTimeTrends
     environment:
       SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
       SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
+      WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/task/API_URL}
+      WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
+
+  summary-push:
+    handler: bin/summary-push
+    environment:
+      SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
+      SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
+      WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/task/API_URL}
+      WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
+    timeout: 240
 
 # you can add CloudFormation resource templates here
 resources:
@@ -128,6 +139,20 @@ resources:
             KeyType: HASH
           - AttributeName: trend_rank
             KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    summaryTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: summaries
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1

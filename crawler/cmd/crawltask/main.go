@@ -12,7 +12,6 @@ import (
 	"github.com/shoet/trends-collector-crawler/pkg/webcrawler"
 	"github.com/shoet/trends-collector/config"
 	"github.com/shoet/trends-collector/interfaces"
-	"github.com/shoet/trends-collector/slack"
 	"github.com/shoet/trends-collector/store"
 	"github.com/shoet/trends-collector/util/timeutil"
 )
@@ -45,16 +44,8 @@ func main() {
 	}
 
 	httpclient := http.Client{}
-	slackClient, err := slack.NewSlackClient(
-		&httpclient,
-		envConfig.SlackBOTToken,
-		envConfig.SlackChannel,
-	)
-	if err != nil {
-		exitFatal(err)
-	}
 
-	scrappers, err := buildScrappers(clocker, slackClient)
+	scrappers, err := buildScrappers(clocker)
 	if err != nil {
 		exitFatal(err)
 	}
@@ -71,16 +62,13 @@ func main() {
 		exitFatal(err)
 	}
 
-	// TODO: page summary
-
 }
 
 func buildScrappers(
-	clocker interfaces.Clocker, slackClient *slack.SlackClient,
+	clocker interfaces.Clocker,
 ) (scrapper.Scrappers, error) {
 	dailyTrendsScrapper := scrapper.NewGoogleTrendsDailyTrendsScrapper(clocker)
 	realTimeTrendsScrapper := scrapper.NewGoogleTrendsRealTimeTrendsScrapper(clocker)
-	hhkbScrapper := scrapper.NewHHKBStudioNotifyScrapper(slackClient)
 	scrappers := scrapper.Scrappers{
 		{
 			Category: "DailyTrends",
@@ -91,11 +79,6 @@ func buildScrappers(
 			Category: "RealTimeTrends",
 			Url:      "https://trends.google.co.jp/trends/trendingsearches/realtime?geo=JP&hl=ja&category=all",
 			Scrapper: realTimeTrendsScrapper,
-		},
-		{
-			Category: "HHKB",
-			Url:      "https://www.pfu.ricoh.com/direct/hhkb/hhkb-studio/detail_pd-id120b.html",
-			Scrapper: hhkbScrapper,
 		},
 	}
 	return scrappers, nil
