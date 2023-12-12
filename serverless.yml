@@ -20,6 +20,9 @@ service: trends-collector
 # Check out our docs for more details
 frameworkVersion: "3"
 
+plugins:
+  - serverless-step-functions
+
 provider:
   name: aws
   runtime: go1.x
@@ -86,10 +89,6 @@ functions:
     handler: bin/push
     events:
       - eventBridge:
-          schedule: cron(0 9 * * ? *)
-          input:
-            category: DailyTrends
-      - eventBridge:
           schedule: cron(0 */3 * * ? *)
           input:
             category: RealTimeTrends
@@ -107,6 +106,26 @@ functions:
       WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/task/API_URL}
       WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
     timeout: 240
+
+stepFunctions:
+  stateMachines:
+    StateMachine1:
+      name: DailyTrendsStateMachine
+      definition:
+        StartAt: PushDaily
+        States:
+          PushDaily:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [PushLambdaFunction, Arn]
+            Parameters:
+              category: DailyTrends
+            Next: SummaryPush
+          SummaryPush:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [SummaryDashpushLambdaFunction, Arn]
+            End: true
 
 # you can add CloudFormation resource templates here
 resources:
@@ -192,6 +211,17 @@ resources:
                   Subnets:
                     - subnet-018ec35c226077950
 
+    DailyTrendsSchedule:
+      Type: AWS::Events::Rule
+      Properties:
+        State: ENABLED
+        ScheduleExpression: "cron(0 9 * * ? *)"
+        Targets:
+          - Arn:
+              Fn::GetAtt: [DailyTrendsStateMachine, Arn]
+            Id: trends-collector-crawler-schedule
+            RoleArn: !GetAtt EventsRole.Arn
+
     EventsRole:
       Type: "AWS::IAM::Role"
       Properties:
@@ -203,7 +233,7 @@ resources:
                 Service: "events.amazonaws.com"
               Action: "sts:AssumeRole"
         Policies:
-          - PolicyName: "ecs-events-policy"
+          - PolicyName: "events-policy"
             PolicyDocument:
               Version: "2012-10-17"
               Statement:
@@ -215,6 +245,10 @@ resources:
                   Resource:
                     - !Sub "arn:aws:iam::${AWS::AccountId}:role/trends-collector-iam-role-for-ecs-task-execute-6553882"
                     - !Sub "arn:aws:iam::${AWS::AccountId}:role/trends-collector-iam-role-for-ecs-task-5ec0e0b"
+                - Effect: "Allow"
+                  Action: "states:StartExecution"
+                  Resource:
+                    Fn::GetAtt: [DailyTrendsStateMachine, Arn]
 #  Outputs:
 #     NewOutput:
 #       Description: "Description for the output"
