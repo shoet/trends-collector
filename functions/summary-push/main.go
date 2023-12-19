@@ -130,7 +130,7 @@ func Handler(ctx context.Context, request entities.Request) (Response, error) {
 			continue
 		}
 		if res.TaskStatus != "complete" {
-			text := fmt.Sprintf("第%d位【%s】\n%s", i+1, res.PageUrl, "残念ながら要約に失敗しました・・・")
+			text := fmt.Sprintf("第%d位 %s\n%s", i+1, res.PageUrl, "残念ながら要約に失敗しました・・・")
 			if err := slackClient.SendMessage(text); err != nil {
 				logger.Error("post slack summary", err)
 				return Response{Message: "failed"}, fmt.Errorf("failed to post summary slack: %w", err)
@@ -138,7 +138,7 @@ func Handler(ctx context.Context, request entities.Request) (Response, error) {
 			continue
 		}
 		// post slack
-		text := fmt.Sprintf("第%d位【%s】\n%s", i+1, res.PageUrl, res.Summary)
+		text := fmt.Sprintf("第%d位 %s\n%s", i+1, res.PageUrl, res.Summary)
 		if err := slackClient.SendMessage(text); err != nil {
 			logger.Error("post slack", err)
 			return Response{Message: "failed"}, fmt.Errorf("failed to post slack: %w", err)
