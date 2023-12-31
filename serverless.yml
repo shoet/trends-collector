@@ -85,18 +85,18 @@ functions:
           cors: true
           # private: true
 
-  push:
-    handler: bin/push
-    events:
-      - eventBridge:
-          schedule: cron(0 */3 * * ? *)
-          input:
-            category: RealTimeTrends
-    environment:
-      SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
-      SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
-      WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/task/API_URL}
-      WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
+  # push:
+  #   handler: bin/push
+  #   events:
+  #     - eventBridge:
+  #         schedule: cron(0 */3 * * ? *)
+  #         input:
+  #           category: RealTimeTrends
+  #   environment:
+  #     SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
+  #     SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
+  #     WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/task/API_URL}
+  #     WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
 
   summary-push:
     handler: bin/summary-push
@@ -112,15 +112,15 @@ stepFunctions:
     StateMachine1:
       name: DailyTrendsStateMachine
       definition:
-        StartAt: PushDaily
+        StartAt: SummaryPush
         States:
-          PushDaily:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [PushLambdaFunction, Arn]
-            Parameters:
-              category: DailyTrends
-            Next: SummaryPush
+          # PushDaily:
+          #   Type: Task
+          #   Resource:
+          #     Fn::GetAtt: [PushLambdaFunction, Arn]
+          #   Parameters:
+          #     category: DailyTrends
+          #   Next: SummaryPush
           SummaryPush:
             Type: Task
             Resource:
