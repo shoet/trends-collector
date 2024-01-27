@@ -157,9 +157,7 @@ func RunTask(ctx context.Context) (Response, error) {
 }
 
 func init() {
-	if err := godotenv.Load(); err != nil {
-		panic(err)
-	}
+	godotenv.Load()
 }
 
 func main() {
