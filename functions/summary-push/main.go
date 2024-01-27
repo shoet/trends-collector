@@ -16,6 +16,7 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/go-playground/validator/v10"
+	"github.com/joho/godotenv"
 	"github.com/shoet/trends-collector/config"
 	"github.com/shoet/trends-collector/entities"
 	"github.com/shoet/trends-collector/logging"
@@ -29,6 +30,10 @@ type Response struct {
 }
 
 func Handler(ctx context.Context, request entities.Request) (Response, error) {
+	return RunTask(ctx)
+}
+
+func RunTask(ctx context.Context) (Response, error) {
 	logger := logging.NewLogger(os.Stdout)
 	c, err := awsConfig.LoadDefaultConfig(ctx)
 	if err != nil {
@@ -89,11 +94,14 @@ func Handler(ctx context.Context, request entities.Request) (Response, error) {
 	for rankAsc, t := range taskIds {
 		wg.Add(1)
 		go func(taskId string, rank int) {
+			logger.Info(fmt.Sprintf("start pooling task status: %s", taskId))
 			defer wg.Done()
 			traceIdLogger := logger.NewTraceIdLogger(taskId)
 			result, err := summaryClient.PoolingTaskStatus(taskId)
 			if err != nil {
-				traceIdLogger.Error("pooling task status", err)
+				traceIdLogger.Error("failed to pooling task status", err)
+				result.TaskStatus = "failed"
+				ch <- poolingResult{Rank: rank, TaskId: taskId, result: result}
 				return
 			}
 			traceIdLogger.Info("pooling task status: " + result.TaskStatus)
@@ -148,8 +156,19 @@ func Handler(ctx context.Context, request entities.Request) (Response, error) {
 	return Response{Message: "succceed"}, nil
 }
 
+func init() {
+	if err := godotenv.Load(); err != nil {
+		panic(err)
+	}
+}
+
 func main() {
-	lambda.Start(Handler)
+	if os.Getenv("ENV") == "local" {
+		RunTask(context.Background())
+		return
+	} else {
+		lambda.Start(Handler)
+	}
 }
 
 func checkConfig(cfg *config.Config) error {

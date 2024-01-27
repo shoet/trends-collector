@@ -18,3 +18,4 @@ bin
 *.out
 
 node_modules
+.env

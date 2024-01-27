@@ -12,6 +12,7 @@ require (
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/go-rod/rod v0.114.5
 	github.com/google/go-cmp v0.6.0
+	github.com/joho/godotenv v1.5.1
 	github.com/microcosm-cc/bluemonday v1.0.26
 	github.com/rs/zerolog v1.31.0
 )
