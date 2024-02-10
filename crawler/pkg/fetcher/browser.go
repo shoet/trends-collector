@@ -15,6 +15,10 @@ type PageFetcherInput struct {
 	BrowserPath string
 }
 
+type FetchPageResult struct {
+	RodPage *rod.Page
+}
+
 func NewPageFetcher(input *PageFetcherInput) (*PageFetcher, error) {
 	if input.BrowserPath == "" {
 		return nil, fmt.Errorf("Browser path is empty")
@@ -26,10 +30,14 @@ func NewPageFetcher(input *PageFetcherInput) (*PageFetcher, error) {
 	return &PageFetcher{browser: browser}, nil
 }
 
-func (f *PageFetcher) FetchPage(url string) *rod.Page {
+func (f *PageFetcher) FetchPage(url string) (*FetchPageResult, error) {
 	page := f.browser.MustPage(url)
 	page.MustWaitLoad()
-	return page
+
+	result := &FetchPageResult{
+		RodPage: page,
+	}
+	return result, nil
 }
 
 func BuildBrowser(browserPath string) (*rod.Browser, error) {

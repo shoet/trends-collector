@@ -19,11 +19,14 @@ func Test_GoogleTrendsDailyTrendsScrapper_ScrapePage(t *testing.T) {
 		t.Fatalf("failed build fetcher: %v", err)
 	}
 
-	doc := fetcher.FetchPage(url)
+	result, err := fetcher.FetchPage(url)
+	if err != nil {
+		t.Fatalf("failed fetch page: %v", err)
+	}
 
 	sut := NewGoogleTrendsDailyTrendsScrapper(c)
 	pages, err := sut.ScrapePage("DailyTrend", &ScrapperInput{
-		RodPage: doc,
+		RodPage: result.RodPage,
 	})
 	if err != nil {
 		t.Fatalf("failed scrape page: %v", err)
@@ -44,11 +47,14 @@ func Test_GoogleTrendsRealTimeTrendsScrapper_ScrapePage(t *testing.T) {
 		t.Fatalf("failed build fetcher: %v", err)
 	}
 
-	doc := fetcher.FetchPage(url)
+	result, err := fetcher.FetchPage(url)
+	if err != nil {
+		t.Fatalf("failed fetch page: %v", err)
+	}
 
 	sut := NewGoogleTrendsRealTimeTrendsScrapper(c)
 	pages, err := sut.ScrapePage("RealTimeTrend", &ScrapperInput{
-		RodPage: doc,
+		RodPage: result.RodPage,
 	})
 	if err != nil {
 		t.Fatalf("failed scrape page: %v", err)

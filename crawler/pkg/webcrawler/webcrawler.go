@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/go-rod/rod"
 	"github.com/shoet/trends-collector-crawler/pkg/fetcher"
 	"github.com/shoet/trends-collector-crawler/pkg/scrapper"
 	"github.com/shoet/trends-collector/interfaces"
@@ -13,7 +12,7 @@ import (
 )
 
 type PageFetcher interface {
-	FetchPage(url string) *rod.Page
+	FetchPage(url string) (*fetcher.FetchPageResult, error)
 }
 
 type WebCrawler struct {
@@ -52,10 +51,13 @@ func (w *WebCrawler) CrawlPages(ctx context.Context) error {
 	for i := 0; i < len(w.scrappers); i++ {
 		s := &w.scrappers[i]
 		fmt.Printf("Crawl: %s", s.Url)
-		page := w.fetcher.FetchPage(s.Url)
+		result, err := w.fetcher.FetchPage(s.Url)
+		if err != nil {
+			return fmt.Errorf("failed fetch page: %w", err)
+		}
 
 		scrapperInput := &scrapper.ScrapperInput{
-			RodPage: page,
+			RodPage: result.RodPage,
 		}
 
 		elements, err := s.Scrapper.ScrapePage(s.Category, scrapperInput)
