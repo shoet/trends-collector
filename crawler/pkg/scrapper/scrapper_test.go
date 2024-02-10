@@ -22,7 +22,9 @@ func Test_GoogleTrendsDailyTrendsScrapper_ScrapePage(t *testing.T) {
 	doc := fetcher.FetchPage(url)
 
 	sut := NewGoogleTrendsDailyTrendsScrapper(c)
-	pages, err := sut.ScrapePage("DailyTrend", doc)
+	pages, err := sut.ScrapePage("DailyTrend", &ScrapperInput{
+		RodPage: doc,
+	})
 	if err != nil {
 		t.Fatalf("failed scrape page: %v", err)
 	}
@@ -45,7 +47,9 @@ func Test_GoogleTrendsRealTimeTrendsScrapper_ScrapePage(t *testing.T) {
 	doc := fetcher.FetchPage(url)
 
 	sut := NewGoogleTrendsRealTimeTrendsScrapper(c)
-	pages, err := sut.ScrapePage("RealTimeTrend", doc)
+	pages, err := sut.ScrapePage("RealTimeTrend", &ScrapperInput{
+		RodPage: doc,
+	})
 	if err != nil {
 		t.Fatalf("failed scrape page: %v", err)
 	}
