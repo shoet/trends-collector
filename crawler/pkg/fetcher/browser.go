@@ -7,7 +7,7 @@ import (
 	"github.com/go-rod/rod/lib/launcher"
 )
 
-type PageFetcher struct {
+type RodPageFetcher struct {
 	browser *rod.Browser
 }
 
@@ -19,7 +19,7 @@ type FetchPageResult struct {
 	RodPage *rod.Page
 }
 
-func NewPageFetcher(input *PageFetcherInput) (*PageFetcher, error) {
+func NewRodPageFetcher(input *PageFetcherInput) (*RodPageFetcher, error) {
 	if input.BrowserPath == "" {
 		return nil, fmt.Errorf("Browser path is empty")
 	}
@@ -27,10 +27,10 @@ func NewPageFetcher(input *PageFetcherInput) (*PageFetcher, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to build browser: %w", err)
 	}
-	return &PageFetcher{browser: browser}, nil
+	return &RodPageFetcher{browser: browser}, nil
 }
 
-func (f *PageFetcher) FetchPage(url string) (*FetchPageResult, error) {
+func (f *RodPageFetcher) FetchPage(url string) (*FetchPageResult, error) {
 	page := f.browser.MustPage(url)
 	page.MustWaitLoad()
 

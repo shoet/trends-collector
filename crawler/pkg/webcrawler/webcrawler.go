@@ -18,7 +18,7 @@ type PageFetcher interface {
 type WebCrawler struct {
 	client    interfaces.Client
 	scrappers scrapper.Scrappers
-	fetcher   *fetcher.PageFetcher
+	fetcher   PageFetcher
 	db        *dynamodb.Client
 	repo      *store.PageRepository
 }
@@ -30,7 +30,7 @@ func NewWebCrawler(
 	db *dynamodb.Client,
 	repo *store.PageRepository,
 ) (*WebCrawler, error) {
-	fetcher, err := fetcher.NewPageFetcher(&fetcher.PageFetcherInput{
+	fetcher, err := fetcher.NewRodPageFetcher(&fetcher.PageFetcherInput{
 		BrowserPath: browserPath,
 	})
 	if err != nil {
