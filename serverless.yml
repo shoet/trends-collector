@@ -93,7 +93,10 @@ functions:
       name: crawlerContainerImage
     timeout: 300
     memorySize: 2048
-    ephemeralStorageSize: 2048
+    ephemeralStorageSize: 1024
+    events:
+      - eventBridge:
+          schedule: "cron(0 * * * ? *)"
 
 # stepFunctions:
 #   stateMachines:
@@ -115,7 +118,6 @@ functions:
 #               Fn::GetAtt: [SummaryDashpushLambdaFunction, Arn]
 #             End: true
 
-# you can add CloudFormation resource templates here
 resources:
   Resources:
     topicsTable:
@@ -168,9 +170,6 @@ resources:
         KeySchema:
           - AttributeName: tablename
             KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
         BillingMode: PAY_PER_REQUEST
 
     ECSSchedule:
