@@ -1,32 +1,18 @@
-# Welcome to Serverless!
-#
-# This file is the main config file for your service.
-# It's very minimal at this point and uses default values.
-# You can always add more config options for more control.
-# We've included some commented out config examples here.
-# Just uncomment any of them to get that config option.
-#
-# For full config options, check the docs:
-#    docs.serverless.com
-#
-# Happy Coding!
-
 service: trends-collector
-# app and org for use with dashboard.serverless.com
-#app: your-app-name
-#org: your-org-name
-
-# You can pin your service to only deploy with a specific Serverless version
-# Check out our docs for more details
 frameworkVersion: "3"
 
 plugins:
-  - serverless-step-functions
+  - ./serverless_plugins/packing_go.js
+  # - serverless-step-functions
+
+custom:
+  go:
+    ignoreFunctions:
+      - summary-push
 
 provider:
   name: aws
-  runtime: go1.x
-
+  runtime: provided.al2
   stage: dev
   region: ap-northeast-1
 
@@ -41,14 +27,22 @@ provider:
         - dynamodb:Query
       Resource: "*"
 
+  ecr:
+    images:
+      crawlerContainerImage:
+        path: .
+        platform: linux/amd64
+        file: ./crawler/Dockerfile
+
 package:
   patterns:
     - "!./**"
     - ./bin/**
+    - ./functions/**
 
 functions:
   health:
-    handler: bin/health
+    handler: functions/health/main.go
     events:
       - http:
           path: /health
@@ -57,7 +51,7 @@ functions:
           # private: true
 
   topic:
-    handler: bin/topic
+    handler: functions/topic/main.go
     events:
       - http:
           path: /topic
@@ -85,21 +79,8 @@ functions:
           cors: true
           # private: true
 
-  # push:
-  #   handler: bin/push
-  #   events:
-  #     - eventBridge:
-  #         schedule: cron(0 */3 * * ? *)
-  #         input:
-  #           category: RealTimeTrends
-  #   environment:
-  #     SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
-  #     SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
-  #     WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/task/API_URL}
-  #     WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
-
   summary-push:
-    handler: bin/summary-push
+    handler: functions/summary-push/main.go
     environment:
       SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
       SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
@@ -107,25 +88,32 @@ functions:
       WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
     timeout: 240
 
-stepFunctions:
-  stateMachines:
-    StateMachine1:
-      name: DailyTrendsStateMachine
-      definition:
-        StartAt: SummaryPush
-        States:
-          # PushDaily:
-          #   Type: Task
-          #   Resource:
-          #     Fn::GetAtt: [PushLambdaFunction, Arn]
-          #   Parameters:
-          #     category: DailyTrends
-          #   Next: SummaryPush
-          SummaryPush:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [SummaryDashpushLambdaFunction, Arn]
-            End: true
+  crawler:
+    image:
+      name: crawlerContainerImage
+    timeout: 300
+    memorySize: 2048
+    ephemeralStorageSize: 2048
+
+# stepFunctions:
+#   stateMachines:
+#     StateMachine1:
+#       name: DailyTrendsStateMachine
+#       definition:
+#         StartAt: SummaryPush
+#         States:
+#           # PushDaily:
+#           #   Type: Task
+#           #   Resource:
+#           #     Fn::GetAtt: [PushLambdaFunction, Arn]
+#           #   Parameters:
+#           #     category: DailyTrends
+#           #   Next: SummaryPush
+#           SummaryPush:
+#             Type: Task
+#             Resource:
+#               Fn::GetAtt: [SummaryDashpushLambdaFunction, Arn]
+#             End: true
 
 # you can add CloudFormation resource templates here
 resources:
