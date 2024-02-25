@@ -1,5 +1,5 @@
 # ===== build stage ====
-FROM golang:1.20.10-bullseye as builder
+FROM golang:1.21-bullseye as builder
 
 WORKDIR /app
 
@@ -18,16 +18,15 @@ RUN --mount=type=cache,target=/gomod-cache \
     go build -trimpath -ldflags="-w -s" -tags timetzdata -o ./bin/main ./cmd/crawltask/main.go
 
 # ===== deploy stage ====
-FROM golang:1.20.10-alpine as deploy
+FROM golang:1.21-bullseye as deploy
+
+RUN apt update -y
+RUN apt install -y chromium
 
 WORKDIR /app
 
-RUN apk update
-
-RUN apk add chromium
-RUN apk add libc6-compat
-RUN ln -s /lib/libc.so.6 /usr/lib/libresolv.so.2
-
 COPY --from=builder /app/crawler/bin/main ./main
+
+ENV CRAWLER_BROWSER_PATH=/usr/bin/chromium
 
 CMD ["/app/main"]

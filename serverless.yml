@@ -25,6 +25,7 @@ provider:
         - dynamodb:DeleteItem
         - dynamodb:Scan
         - dynamodb:Query
+        - dynamodb:BatchWriteItem
       Resource: "*"
 
   ecr:
@@ -37,7 +38,6 @@ provider:
 package:
   patterns:
     - "!./**"
-    - ./bin/**
     - ./functions/**
 
 functions:
@@ -128,9 +128,7 @@ resources:
         KeySchema:
           - AttributeName: name
             KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
 
     pagesTable:
       Type: AWS::DynamoDB::Table
@@ -146,9 +144,7 @@ resources:
             KeyType: HASH
           - AttributeName: trend_rank
             KeyType: RANGE
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
 
     summaryTable:
       Type: AWS::DynamoDB::Table
@@ -160,9 +156,7 @@ resources:
         KeySchema:
           - AttributeName: id
             KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
 
     sequenceTable:
       Type: AWS::DynamoDB::Table
@@ -177,6 +171,7 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
 
     ECSSchedule:
       Type: AWS::Events::Rule

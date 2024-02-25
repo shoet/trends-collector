@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
+	"github.com/playwright-community/playwright-go"
 	"github.com/shoet/trends-collector/entities"
 	"github.com/shoet/trends-collector/interfaces"
 	"github.com/shoet/trends-collector/slack"
@@ -19,7 +20,8 @@ import (
 )
 
 type ScrapperInput struct {
-	RodPage *rod.Page
+	RodPage        *rod.Page
+	PlaywrightPage playwright.Page
 }
 
 type Scrapper interface {
