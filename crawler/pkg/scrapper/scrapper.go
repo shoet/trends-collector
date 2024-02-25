@@ -12,14 +12,20 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
+	"github.com/playwright-community/playwright-go"
 	"github.com/shoet/trends-collector/entities"
 	"github.com/shoet/trends-collector/interfaces"
 	"github.com/shoet/trends-collector/slack"
 	"github.com/shoet/trends-collector/util/timeutil"
 )
 
+type ScrapperInput struct {
+	RodPage        *rod.Page
+	PlaywrightPage playwright.Page
+}
+
 type Scrapper interface {
-	ScrapePage(string, *rod.Page) ([]*entities.Page, error)
+	ScrapePage(string, *ScrapperInput) ([]*entities.Page, error)
 }
 
 type Scrappers []struct {
@@ -41,9 +47,9 @@ func NewGoogleTrendsDailyTrendsScrapper(
 
 func (g *GoogleTrendsDailyTrendsScrapper) ScrapePage(
 	category string,
-	doc *rod.Page,
+	input *ScrapperInput,
 ) ([]*entities.Page, error) {
-	topElement := doc.MustElement(".feed-list-wrapper")
+	topElement := input.RodPage.MustElement(".feed-list-wrapper")
 	trends := topElement.MustElements(".md-list-block")
 	pages := make([]*entities.Page, len(trends), len(trends))
 	ymd := timeutil.NowFormatYYYYMMDD(g.clocker)
@@ -81,9 +87,9 @@ func NewGoogleTrendsRealTimeTrendsScrapper(
 
 func (g *GoogleTrendsRealTimeTrendsScrapper) ScrapePage(
 	category string,
-	doc *rod.Page,
+	input *ScrapperInput,
 ) ([]*entities.Page, error) {
-	topElement := doc.MustElement(".trending-feed-content")
+	topElement := input.RodPage.MustElement(".trending-feed-content")
 	trends := topElement.MustElements(".feed-item-header")
 	pages := make([]*entities.Page, len(trends), len(trends))
 	ymdhms := timeutil.NowFormatYYYYMMDDHHMMSS(g.clocker)
@@ -119,10 +125,10 @@ func NewHHKBStudioNotifyScrapper(slackClient *slack.SlackClient) *HHKBStudioNoti
 
 func (h *HHKBStudioNotifyScrapper) ScrapePage(
 	category string,
-	doc *rod.Page,
+	input *ScrapperInput,
 ) ([]*entities.Page, error) {
 	// get screenshot
-	imageBytes, err := doc.Screenshot(true, &proto.PageCaptureScreenshot{
+	imageBytes, err := input.RodPage.Screenshot(true, &proto.PageCaptureScreenshot{
 		Clip: &proto.PageViewport{
 			X:      0,
 			Y:      0,
@@ -139,7 +145,7 @@ func (h *HHKBStudioNotifyScrapper) ScrapePage(
 		return nil, fmt.Errorf("failed to save screenshot: %w", err)
 	}
 
-	html := doc.MustHTML()
+	html := input.RodPage.MustHTML()
 	searchText := "大好評につき現在在庫切れです。"
 	message := searchText
 	if !strings.Contains(html, searchText) {

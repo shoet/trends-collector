@@ -1,32 +1,20 @@
-# Welcome to Serverless!
-#
-# This file is the main config file for your service.
-# It's very minimal at this point and uses default values.
-# You can always add more config options for more control.
-# We've included some commented out config examples here.
-# Just uncomment any of them to get that config option.
-#
-# For full config options, check the docs:
-#    docs.serverless.com
-#
-# Happy Coding!
-
 service: trends-collector
-# app and org for use with dashboard.serverless.com
-#app: your-app-name
-#org: your-org-name
-
-# You can pin your service to only deploy with a specific Serverless version
-# Check out our docs for more details
 frameworkVersion: "3"
 
 plugins:
-  - serverless-step-functions
+  - ./serverless_plugins/packing_go.js
+
+custom:
+  go:
+    cmd: GOARCH=amd64 GOOS=linux go build -ldflags="-s -w"
+    supportedRuntimes: ["provided.al2"]
+    buildProvidedRuntimeAsBootstrap: true
+    ignoreFunctions:
+      - crawler
 
 provider:
   name: aws
-  runtime: go1.x
-
+  runtime: provided.al2
   stage: dev
   region: ap-northeast-1
 
@@ -39,16 +27,38 @@ provider:
         - dynamodb:DeleteItem
         - dynamodb:Scan
         - dynamodb:Query
+        - dynamodb:BatchWriteItem
       Resource: "*"
 
+  ecr:
+    images:
+      crawlerContainerImage:
+        path: .
+        platform: linux/amd64
+        file: ./crawler/Dockerfile
+
 package:
-  patterns:
-    - "!./**"
-    - ./bin/**
+  individually: true
+  exclude:
+    - "./**"
+  include:
+    - "./functions/**"
 
 functions:
+  summary-push:
+    handler: functions/summary-push/main.go
+    environment:
+      SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
+      SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
+      WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/task/API_URL}
+      WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
+    timeout: 240
+    events:
+      - eventBridge:
+          schedule: "cron(0 9 * * ? *)"
+
   health:
-    handler: bin/health
+    handler: functions/health/main.go
     events:
       - http:
           path: /health
@@ -57,7 +67,7 @@ functions:
           # private: true
 
   topic:
-    handler: bin/topic
+    handler: functions/topic/main.go
     events:
       - http:
           path: /topic
@@ -85,49 +95,16 @@ functions:
           cors: true
           # private: true
 
-  # push:
-  #   handler: bin/push
-  #   events:
-  #     - eventBridge:
-  #         schedule: cron(0 */3 * * ? *)
-  #         input:
-  #           category: RealTimeTrends
-  #   environment:
-  #     SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
-  #     SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
-  #     WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/task/API_URL}
-  #     WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
+  crawler:
+    image:
+      name: crawlerContainerImage
+    timeout: 300
+    memorySize: 2048
+    ephemeralStorageSize: 1024
+    events:
+      - eventBridge:
+          schedule: "cron(0 * * * ? *)"
 
-  summary-push:
-    handler: bin/summary-push
-    environment:
-      SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
-      SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
-      WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/task/API_URL}
-      WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/task/API_KEY}
-    timeout: 240
-
-stepFunctions:
-  stateMachines:
-    StateMachine1:
-      name: DailyTrendsStateMachine
-      definition:
-        StartAt: SummaryPush
-        States:
-          # PushDaily:
-          #   Type: Task
-          #   Resource:
-          #     Fn::GetAtt: [PushLambdaFunction, Arn]
-          #   Parameters:
-          #     category: DailyTrends
-          #   Next: SummaryPush
-          SummaryPush:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [SummaryDashpushLambdaFunction, Arn]
-            End: true
-
-# you can add CloudFormation resource templates here
 resources:
   Resources:
     topicsTable:
@@ -140,9 +117,7 @@ resources:
         KeySchema:
           - AttributeName: name
             KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
 
     pagesTable:
       Type: AWS::DynamoDB::Table
@@ -158,9 +133,7 @@ resources:
             KeyType: HASH
           - AttributeName: trend_rank
             KeyType: RANGE
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
 
     summaryTable:
       Type: AWS::DynamoDB::Table
@@ -172,9 +145,7 @@ resources:
         KeySchema:
           - AttributeName: id
             KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
 
     sequenceTable:
       Type: AWS::DynamoDB::Table
@@ -186,70 +157,4 @@ resources:
         KeySchema:
           - AttributeName: tablename
             KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
-
-    ECSSchedule:
-      Type: AWS::Events::Rule
-      Properties:
-        State: ENABLED
-        ScheduleExpression: "cron(0 * * * ? *)"
-        Targets:
-          - Arn: !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/trends-collector-crawler
-            Id: trends-collector-crawler-schedule
-            RoleArn: !GetAtt EventsRole.Arn
-            EcsParameters:
-              TaskDefinitionArn: !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/trends-crawler
-              TaskCount: 1
-              LaunchType: FARGATE
-              NetworkConfiguration:
-                AwsVpcConfiguration:
-                  AssignPublicIp: ENABLED
-                  SecurityGroups:
-                    - sg-01a16964484f08add
-                  Subnets:
-                    - subnet-018ec35c226077950
-
-    DailyTrendsSchedule:
-      Type: AWS::Events::Rule
-      Properties:
-        State: ENABLED
-        ScheduleExpression: "cron(0 9 * * ? *)"
-        Targets:
-          - Arn:
-              Fn::GetAtt: [DailyTrendsStateMachine, Arn]
-            Id: trends-collector-crawler-schedule
-            RoleArn: !GetAtt EventsRole.Arn
-
-    EventsRole:
-      Type: "AWS::IAM::Role"
-      Properties:
-        AssumeRolePolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            - Effect: "Allow"
-              Principal:
-                Service: "events.amazonaws.com"
-              Action: "sts:AssumeRole"
-        Policies:
-          - PolicyName: "events-policy"
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: "Allow"
-                  Action: "ecs:RunTask"
-                  Resource: "*"
-                - Effect: "Allow"
-                  Action: "iam:PassRole"
-                  Resource:
-                    - !Sub "arn:aws:iam::${AWS::AccountId}:role/trends-collector-iam-role-for-ecs-task-execute-6553882"
-                    - !Sub "arn:aws:iam::${AWS::AccountId}:role/trends-collector-iam-role-for-ecs-task-5ec0e0b"
-                - Effect: "Allow"
-                  Action: "states:StartExecution"
-                  Resource:
-                    Fn::GetAtt: [DailyTrendsStateMachine, Arn]
-#  Outputs:
-#     NewOutput:
-#       Description: "Description for the output"
-#       Value: "Some output value"
+        BillingMode: PAY_PER_REQUEST

@@ -1,5 +1,9 @@
 {
-  "devDependencies": {
-    "serverless-step-functions": "^3.18.0"
+  "dependencies": {
+    "adm-zip": "^0.5.9",
+    "chalk": "^2.4.2",
+    "lodash.merge": "^4.6.2",
+    "p-map": "^3.0.0",
+    "pretty-hrtime": "^1.0.3"
   }
 }

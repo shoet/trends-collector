@@ -11,12 +11,17 @@ import (
 	"github.com/shoet/trends-collector/store"
 )
 
+type PageFetcher interface {
+	FetchPage(url string) (*fetcher.FetchPageResult, error)
+}
+
 type WebCrawler struct {
 	client    interfaces.Client
 	scrappers scrapper.Scrappers
-	fetcher   *fetcher.PageFetcher
+	fetcher   PageFetcher
 	db        *dynamodb.Client
 	repo      *store.PageRepository
+	Closer    func() error
 }
 
 func NewWebCrawler(
@@ -26,30 +31,40 @@ func NewWebCrawler(
 	db *dynamodb.Client,
 	repo *store.PageRepository,
 ) (*WebCrawler, error) {
-	fetcher, err := fetcher.NewPageFetcher(&fetcher.PageFetcherInput{
+	rodFetcher, cleanup, err := fetcher.NewRodPageFetcher(&fetcher.PageFetcherInput{
 		BrowserPath: browserPath,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to build fetcher: %w", err)
 	}
-
 	return &WebCrawler{
 		client:    client,
 		scrappers: scrappers,
-		fetcher:   fetcher,
+		fetcher:   rodFetcher,
 		db:        db,
 		repo:      repo,
+		Closer:    cleanup,
 	}, nil
 }
 
 func (w *WebCrawler) CrawlPages(ctx context.Context) error {
 	// TODO: goroutine
+	fmt.Println("Start crawl pages")
 	for i := 0; i < len(w.scrappers); i++ {
 		s := &w.scrappers[i]
-		fmt.Println("Crawl: %s", s.Url)
-		page := w.fetcher.FetchPage(s.Url)
+		fmt.Printf("Crawl: %s\n", s.Url)
+		result, err := w.fetcher.FetchPage(s.Url)
+		if err != nil {
+			return fmt.Errorf("failed fetch page: %w", err)
+		}
 
-		elements, err := s.Scrapper.ScrapePage(s.Category, page)
+		scrapperInput := &scrapper.ScrapperInput{
+			RodPage:        result.RodPage,
+			PlaywrightPage: result.PlaywrightPage,
+		}
+
+		fmt.Println("Start scrape")
+		elements, err := s.Scrapper.ScrapePage(s.Category, scrapperInput)
 		if err != nil {
 			return fmt.Errorf("failed scrape page: %w", err)
 		}
@@ -59,6 +74,7 @@ func (w *WebCrawler) CrawlPages(ctx context.Context) error {
 			return nil
 		}
 
+		fmt.Println("Add to repository")
 		if err := w.repo.DeletePageByPartitionKey(ctx, elements[0].PartitionKey); err != nil {
 			return fmt.Errorf("failed DeletePageByPartitionKey: %w", err)
 		}

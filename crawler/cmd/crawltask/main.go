@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/aws/aws-lambda-go/lambda"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/shoet/trends-collector-crawler/pkg/scrapper"
@@ -17,51 +18,65 @@ import (
 )
 
 func exitFatal(err error) {
-	fmt.Println(err)
+	fmt.Println(err.Error())
 	os.Exit(1)
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "local" {
+		err := Run()
+		if err != nil {
+			exitFatal(err)
+		}
+	} else {
+		lambda.Start(Run)
+	}
+}
+
+func Run() error {
 	ctx := context.Background()
 
 	cfg, err := awsConfig.LoadDefaultConfig(ctx)
 	if err != nil {
 		fmt.Printf("load aws config: %s\n", err.Error())
-		exitFatal(err)
+		return fmt.Errorf("load aws config: %w", err)
 	}
 
 	db := dynamodb.NewFromConfig(cfg)
 	clocker, err := timeutil.NewRealClocker()
 	if err != nil {
 		fmt.Println("failed NewReadClocker")
-		exitFatal(err)
+		return fmt.Errorf("failed NewReadClocker: %w", err)
 	}
 	repo := store.NewPageRepository(db, clocker)
 
 	envConfig, err := config.NewConfig()
 	if err != nil {
-		exitFatal(err)
+		return fmt.Errorf("failed NewConfig: %w", err)
 	}
 
 	httpclient := http.Client{}
-
 	scrappers, err := buildScrappers(clocker)
 	if err != nil {
-		exitFatal(err)
+		return fmt.Errorf("failed buildScrappers: %w", err)
 	}
 
 	c, err := webcrawler.NewWebCrawler(
 		&httpclient, envConfig.BrowserPath, scrappers, db, repo)
 	if err != nil {
-		exitFatal(err)
+		return fmt.Errorf("failed NewWebCrawler: %w", err)
+	}
+	if c.Closer != nil {
+		defer c.Closer()
 	}
 
 	err = c.CrawlPages(ctx)
 	if err != nil {
 		fmt.Println("failed CrawlPages")
-		exitFatal(err)
+		return fmt.Errorf("failed CrawlPages: %w", err)
 	}
 
+	return nil
 }
 
 func buildScrappers(

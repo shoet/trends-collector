@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	BrowserPath   string `env:"CRAWLER_BROWSER_PATH"`
+	BrowserPath   string `env:"CRAWLER_BROWSER_PATH" envDefault:"/usr/bin/chromium"`
 	SlackBOTToken string `env:"SLACK_BOT_TOKEN"`
 	SlackChannel  string `env:"SLACK_CHANNEL"`
 	OpenAIAPIKey  string `env:"CRAWLER_OPENAI_API_KEY"`
