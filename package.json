@@ -1,7 +1,4 @@
 {
-  "devDependencies": {
-    "serverless-step-functions": "^3.18.0"
-  },
   "dependencies": {
     "adm-zip": "^0.5.9",
     "chalk": "^2.4.2",
