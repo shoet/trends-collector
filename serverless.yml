@@ -50,8 +50,8 @@ functions:
     environment:
       SLACK_BOT_TOKEN: ${ssm:/trends-collector/push/SLACK_BOT_TOKEN}
       SLACK_CHANNEL: ${ssm:/trends-collector/push/SLACK_CHANNEL}
-      WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/API_URL}
-      WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/API_KEY}
+      WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/prod/API_URL}
+      WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/prod/API_KEY}
     timeout: 240
     events:
       - eventBridge:
