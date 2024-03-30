@@ -229,6 +229,7 @@ func (s *SummaryApiClient) RequestSummaryTask(url string) (string, error) {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 	httpReq.Header.Set("x-api-key", s.apiKey)
+	httpReq.Header.Set("Authorization", "Bearer dummy") // APIGatewayの仕様上、Authorizerのソースにor指定ができないためAuthorizationヘッダーとx-api-keyをセットする
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpClient := http.Client{}
 	resp, err := httpClient.Do(httpReq)
@@ -270,6 +271,7 @@ func (s *SummaryApiClient) RequestSummaryStatus(taskId string) (*SummaryApiRespo
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	httpReq.Header.Set("x-api-key", s.apiKey)
+	httpReq.Header.Set("Authorization", "Bearer dummy") // APIGatewayの仕様上、Authorizerのソースにor指定ができないためAuthorizationヘッダーとx-api-keyをセットする
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpClient := http.Client{}
 	resp, err := httpClient.Do(httpReq)
