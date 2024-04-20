@@ -53,9 +53,9 @@ functions:
       WEB_PAGE_SUMMARY_API_URL: ${ssm:/web-page-summarizer/prod/API_URL}
       WEB_PAGE_SUMMARY_API_KEY: ${ssm:/web-page-summarizer/prod/API_KEY}
     timeout: 240
-    events:
-      - eventBridge:
-          schedule: "cron(0 9 * * ? *)"
+    # events:
+    #   - eventBridge:
+    #       schedule: "cron(0 9 * * ? *)"
 
   health:
     handler: functions/health/main.go
@@ -101,9 +101,9 @@ functions:
     timeout: 300
     memorySize: 2048
     ephemeralStorageSize: 1024
-    events:
-      - eventBridge:
-          schedule: "cron(0 * * * ? *)"
+    # events:
+    #   - eventBridge:
+    #       schedule: "cron(0 * * * ? *)"
 
 resources:
   Resources:
